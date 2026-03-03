@@ -1,0 +1,22 @@
+# Version control
+.git
+.gitignore
+
+# Environment
+.env
+.env.*
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Docs
+README.md
+CONTRIBUTING.md
+*.md
+
+# Misc
+.DS_Store
+*.log
+tmp/

@@ -1,0 +1,141 @@
+stages:
+  - lint
+  - test
+  - build
+  - notify
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+  IMAGE_LATEST: $CI_REGISTRY_IMAGE:latest
+
+# ── Helpers ────────────────────────────────────────────────────────────────────
+
+.notify_telegram: &notify_telegram
+  image: alpine:3.20
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - |
+      curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+        -d chat_id="${TELEGRAM_CHAT_ID}" \
+        -d parse_mode="Markdown" \
+        -d text="${TELEGRAM_MESSAGE}"
+
+# ── Lint ───────────────────────────────────────────────────────────────────────
+
+lint:
+  stage: lint
+  image: golangci/golangci-lint:v1.61-alpine
+  before_script:
+    - go mod download
+  script:
+    - golangci-lint run ./... --timeout 5m
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "dev"
+
+# ── Test ───────────────────────────────────────────────────────────────────────
+
+test:
+  stage: test
+  image: golang:1.23-alpine
+  services:
+    - name: postgres:16-alpine
+      alias: postgres
+      variables:
+        POSTGRES_USER: test
+        POSTGRES_PASSWORD: test
+        POSTGRES_DB: tunescape_test
+    - name: redis:7-alpine
+      alias: redis
+  variables:
+    DB_USER: test
+    DB_PASSWORD: test
+    DB_NAME: tunescape_test
+    DB_HOST: postgres
+    DB_PORT: "5432"
+    DB_DRIVER: postgres
+    DB_SSLMODE: disable
+    REDIS_ADDR: redis:6379
+  before_script:
+    - go mod download
+  script:
+    - go vet ./...
+    - go test ./... -race -count=1
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "dev"
+
+# ── Build ──────────────────────────────────────────────────────────────────────
+
+build:
+  stage: build
+  image: docker:24
+  services:
+    - docker:24-dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker build -t $IMAGE_NAME -t $IMAGE_LATEST .
+    - docker push $IMAGE_NAME
+    - docker push $IMAGE_LATEST
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+
+# ── Deploy ─────────────────────────────────────────────────────────────────────
+
+# deploy:
+#   stage: deploy
+#   script:
+#     - echo "Add your deploy steps here once VPS is set up"
+#     - ssh user@your-server "docker pull $IMAGE_LATEST && docker compose up -d"
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == "dev"
+
+# ── Notify ─────────────────────────────────────────────────────────────────────
+
+notify_mr:
+  <<: *notify_telegram
+  stage: notify
+  variables:
+    TELEGRAM_MESSAGE: |
+      📬 *New MR Opened*
+
+      *Title:* $CI_MERGE_REQUEST_TITLE
+      *Author:* $CI_MERGE_REQUEST_AUTHOR
+      *Branch:* `$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME` → `$CI_MERGE_REQUEST_TARGET_BRANCH_NAME`
+      *Link:* $CI_MERGE_REQUEST_PROJECT_URL/-/merge_requests/$CI_MERGE_REQUEST_IID
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+notify_success:
+  <<: *notify_telegram
+  stage: notify
+  variables:
+    TELEGRAM_MESSAGE: |
+      ✅ *Pipeline Passed*
+
+      *Branch:* `$CI_COMMIT_BRANCH`
+      *Commit:* $CI_COMMIT_SHORT_SHA
+      *Author:* $CI_COMMIT_AUTHOR
+      *Message:* $CI_COMMIT_MESSAGE
+      *Pipeline:* $CI_PIPELINE_URL
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+      when: on_success
+
+notify_failure:
+  <<: *notify_telegram
+  stage: notify
+  variables:
+    TELEGRAM_MESSAGE: |
+      ❌ *Pipeline Failed*
+
+      *Branch:* `$CI_COMMIT_BRANCH`
+      *Commit:* $CI_COMMIT_SHORT_SHA
+      *Author:* $CI_COMMIT_AUTHOR
+      *Message:* $CI_COMMIT_MESSAGE
+      *Pipeline:* $CI_PIPELINE_URL
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+      when: on_failure
