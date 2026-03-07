@@ -38,7 +38,7 @@ lint:
 
 test:
   stage: test
-  image: golang:1.23-alpine
+  image: golang:1.25.1-alpine
   services:
     - name: postgres:16-alpine
       alias: postgres
