@@ -22,7 +22,9 @@ func (p txProvider) RunInTx(ctx context.Context, fn func(Executor) error) error 
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		_ = tx.Rollback()
+	}()
 
 	if err := fn(tx); err != nil {
 		return err
