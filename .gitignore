@@ -1,6 +1,5 @@
 # Go modules
 /bin/
-/pkg/
 /vendor/
 /*.exe
 /*.exe~
