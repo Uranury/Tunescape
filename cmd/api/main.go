@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
-	"gitlab.com/Uranury/tunescape/internal/app"
-	"gitlab.com/Uranury/tunescape/internal/infra"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"gitlab.com/Uranury/tunescape/internal/app"
+	"gitlab.com/Uranury/tunescape/internal/infra"
 )
 
 func main() {

@@ -17,3 +17,6 @@ logs:
 
 migrate:
 	docker compose exec api ./app migrate
+
+fmt:
+	goimports -w .

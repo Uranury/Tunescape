@@ -25,13 +25,11 @@ variables:
 
 lint:
   stage: lint
-  image: golang:1.25.1-alpine
+  image: golangci/golangci-lint:v2.11.1
   before_script:
-    - apk add --no-cache curl
     - go mod download
-    - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin latest
   script:
-    - golangci-lint run ./... --timeout 5m
+    - golangci-lint run ./... --timeout=5m
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == "dev"
@@ -40,7 +38,7 @@ lint:
 
 test:
   stage: test
-  image: golang:1.23-alpine
+  image: golang:1.25.1-alpine
   services:
     - name: postgres:16-alpine
       alias: postgres
@@ -51,6 +49,7 @@ test:
     - name: redis:7-alpine
       alias: redis
   variables:
+    CGO_ENABLED: "1"
     DB_USER: test
     DB_PASSWORD: test
     DB_NAME: tunescape_test
@@ -60,6 +59,7 @@ test:
     DB_SSLMODE: disable
     REDIS_ADDR: redis:6379
   before_script:
+    - apk add --no-cache gcc musl-dev
     - go mod download
   script:
     - go vet ./...

@@ -3,14 +3,15 @@ package infra
 import (
 	"context"
 	"fmt"
-	"github.com/jmoiron/sqlx"
-	"github.com/redis/go-redis/v9"
-	"gitlab.com/Uranury/tunescape/pkg/config"
-	"gitlab.com/Uranury/tunescape/pkg/database"
 	"log/slog"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/jmoiron/sqlx"
+	"github.com/redis/go-redis/v9"
+	"gitlab.com/Uranury/tunescape/pkg/config"
+	"gitlab.com/Uranury/tunescape/pkg/database"
 )
 
 type Deps struct {
