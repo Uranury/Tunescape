@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 	"time"
 
@@ -94,7 +95,7 @@ func RunMigrations(driverName, dsn, migrationsPath string, logger *slog.Logger) 
 	}()
 
 	if err := m.Up(); err != nil {
-		if errors.Is(err, migrate.ErrNoChange) {
+		if errors.Is(err, migrate.ErrNoChange) || errors.Is(err, os.ErrNotExist) {
 			logger.Info("Database is already up to date")
 			return nil
 		}

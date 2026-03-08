@@ -1,0 +1,23 @@
+services:
+  api:
+    environment:
+      DB_USER: postgres
+      DB_PASSWORD: secret
+      DB_NAME: tunescape
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_DRIVER: postgres
+      DB_SSLMODE: disable
+      REDIS_ADDR: redis:6379
+      LISTEN_ADDR: :8080
+      JWT_KEY: dev-secret-key-not-for-production
+      MIGRATIONS_PATH: ./migrations
+      ALLOWED_ORIGINS: http://localhost:5173
+
+  postgres:
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: tunescape
+
+  redis: {}
