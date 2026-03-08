@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"time"
 
+	"log/slog"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"gitlab.com/Uranury/tunescape/internal/infra"
-	"log/slog"
 )
 
 type Server struct {

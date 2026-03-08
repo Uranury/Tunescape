@@ -66,7 +66,9 @@ func RunMigrations(driverName, dsn, migrationsPath string, logger *slog.Logger) 
 	if err != nil {
 		return fmt.Errorf("failed to open migration database: %w", err)
 	}
-	defer migrationDB.Close() // ← Safe to close, it's a separate connection
+	defer func() {
+		_ = migrationDB.Close()
+	}() // ← Safe to close, it's a separate connection
 
 	driver, err := postgres.WithInstance(migrationDB, &postgres.Config{})
 	if err != nil {

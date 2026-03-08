@@ -1,13 +1,18 @@
+version: "2"
+
 linters:
   enable:
     - errcheck
     - staticcheck
     - govet
     - unused
-    - goimports
     - misspell
 
-linters-settings:
+formatters:
+  enable:
+    - goimports
+
+formatters-settings:
   goimports:
     local-prefixes: gitlab.com/Uranury/tunescape
 
