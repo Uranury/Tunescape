@@ -8,13 +8,7 @@ linters:
     - unused
     - misspell
 
-formatters:
-  enable:
-    - goimports
-
-formatters-settings:
-  goimports:
-    local-prefixes: gitlab.com/Uranury/tunescape
+linters-settings: {}
 
 issues:
   exclude-rules:
