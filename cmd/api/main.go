@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"gitlab.com/Uranury/tunescape/internal/app"
+	"gitlab.com/Uranury/tunescape/internal/auth"
 	"gitlab.com/Uranury/tunescape/internal/infra"
+	"gitlab.com/Uranury/tunescape/pkg/database"
 )
 
 func main() {
@@ -19,10 +21,18 @@ func main() {
 	}
 	defer cleanup()
 
+	txProvider := database.NewTxProvider(deps.DBConn)
+
+	authRepo := auth.NewRepository(deps.DBConn)
+	tokenSvc := auth.NewTokenService([]byte(deps.Config.JWTKey), deps.Logger)
+	authSvc := auth.NewRefreshService(tokenSvc, authRepo, txProvider, deps.Logger)
+
 	server := app.NewServer(deps)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	authSvc.StartCleanup(ctx)
 
 	go func() {
 		if err := server.Run(); err != nil {
