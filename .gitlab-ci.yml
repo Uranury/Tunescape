@@ -104,7 +104,7 @@ notify_mr:
       📬 <b>New MR Opened</b>
 
       <b>Title:</b> $CI_MERGE_REQUEST_TITLE
-      <b>Author:</b> $CI_MERGE_REQUEST_AUTHOR
+      <b>Author:</b> $GITLAB_USER_NAME
       <b>Branch:</b> <code>$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME</code> → <code>$CI_MERGE_REQUEST_TARGET_BRANCH_NAME</code>
       <b>Link:</b> $CI_MERGE_REQUEST_PROJECT_URL/-/merge_requests/$CI_MERGE_REQUEST_IID
   rules:
