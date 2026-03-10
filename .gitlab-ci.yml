@@ -18,7 +18,7 @@ variables:
     - |
       curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
         -d chat_id="${TELEGRAM_CHAT_ID}" \
-        -d parse_mode="Markdown" \
+        -d parse_mode="HTML" \
         -d text="${TELEGRAM_MESSAGE}"
 
 # ── Lint ───────────────────────────────────────────────────────────────────────
@@ -101,12 +101,12 @@ notify_mr:
   stage: notify
   variables:
     TELEGRAM_MESSAGE: |
-      📬 *New MR Opened*
+      📬 <b>New MR Opened</b>
 
-      *Title:* $CI_MERGE_REQUEST_TITLE
-      *Author:* $CI_MERGE_REQUEST_AUTHOR
-      *Branch:* `$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME` → `$CI_MERGE_REQUEST_TARGET_BRANCH_NAME`
-      *Link:* $CI_MERGE_REQUEST_PROJECT_URL/-/merge_requests/$CI_MERGE_REQUEST_IID
+      <b>Title:</b> $CI_MERGE_REQUEST_TITLE
+      <b>Author:</b> $GITLAB_USER_NAME
+      <b>Branch:</b> <code>$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME</code> → <code>$CI_MERGE_REQUEST_TARGET_BRANCH_NAME</code>
+      <b>Link:</b> $CI_MERGE_REQUEST_PROJECT_URL/-/merge_requests/$CI_MERGE_REQUEST_IID
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
@@ -115,13 +115,13 @@ notify_success:
   stage: notify
   variables:
     TELEGRAM_MESSAGE: |
-      ✅ *Pipeline Passed*
+      ✅ <b>Pipeline Passed</b>
 
-      *Branch:* `$CI_COMMIT_BRANCH`
-      *Commit:* $CI_COMMIT_SHORT_SHA
-      *Author:* $CI_COMMIT_AUTHOR
-      *Message:* $CI_COMMIT_MESSAGE
-      *Pipeline:* $CI_PIPELINE_URL
+      <b>Branch:</b> $CI_COMMIT_BRANCH
+      <b>Commit:</b> $CI_COMMIT_SHORT_SHA
+      <b>Author:</b> $CI_COMMIT_AUTHOR
+      <b>Message:</b> $CI_COMMIT_MESSAGE
+      <b>Pipeline:</b> $CI_PIPELINE_URL
   rules:
     - if: $CI_COMMIT_BRANCH == "dev"
       when: on_success
@@ -131,13 +131,13 @@ notify_failure:
   stage: notify
   variables:
     TELEGRAM_MESSAGE: |
-      ❌ *Pipeline Failed*
+      ❌ <b>Pipeline Failed</b>
 
-      *Branch:* `$CI_COMMIT_BRANCH`
-      *Commit:* $CI_COMMIT_SHORT_SHA
-      *Author:* $CI_COMMIT_AUTHOR
-      *Message:* $CI_COMMIT_MESSAGE
-      *Pipeline:* $CI_PIPELINE_URL
+      <b>Branch:</b> $CI_COMMIT_BRANCH
+      <b>Commit:</b> $CI_COMMIT_SHORT_SHA
+      <b>Author:</b> $CI_COMMIT_AUTHOR
+      <b>Message:</b> $CI_COMMIT_MESSAGE
+      <b>Pipeline:</b> $CI_PIPELINE_URL
   rules:
     - if: $CI_COMMIT_BRANCH == "dev"
       when: on_failure
