@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS users (
+  id BIGSERIAL PRIMARY KEY,
+  spotify_id TEXT NOT NULL UNIQUE,
+  email TEXT NOT NULL UNIQUE,
+  display_name TEXT NOT NULL,
+  avatar_url TEXT,
+  country TEXT,
+  product TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+);
