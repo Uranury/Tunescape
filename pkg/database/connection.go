@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -17,7 +18,7 @@ import (
 )
 
 // InitDB connects to database with retries and returns the connection
-func InitDB(driverName, dsn string, logger *slog.Logger) (*sqlx.DB, error) {
+func InitDB(ctx context.Context, driverName, dsn string, logger *slog.Logger) (*sqlx.DB, error) {
 	var db *sqlx.DB
 	var err error
 
@@ -35,7 +36,12 @@ func InitDB(driverName, dsn string, logger *slog.Logger) (*sqlx.DB, error) {
 			"wait_time", waitTime,
 			"error", err,
 		)
-		time.Sleep(waitTime)
+		select {
+		case <-time.After(waitTime):
+			continue
+		case <-ctx.Done():
+			return nil, fmt.Errorf("context cancelled during db connection: %w", ctx.Err())
+		}
 	}
 
 	if err != nil {

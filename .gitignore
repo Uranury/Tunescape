@@ -36,3 +36,5 @@ go.sum
 *.temp
 *.bak
 CLAUDE.md
+
+docker-compose.override.yml

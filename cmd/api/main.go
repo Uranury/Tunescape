@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	deps, cleanup, err := infra.New()
+	deps, cleanup, err := infra.New(context.Background())
 	if err != nil {
 		log.Fatalf("Failed to initialize dependencies: %v", err)
 	}

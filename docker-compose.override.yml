@@ -6,13 +6,16 @@ services:
       DB_NAME: tunescape
       DB_HOST: postgres
       DB_PORT: "5432"
-      DB_DRIVER: postgres
       DB_SSLMODE: disable
       REDIS_ADDR: redis:6379
       LISTEN_ADDR: :8080
       JWT_KEY: dev-secret-key-not-for-production
       MIGRATIONS_PATH: ./migrations
       ALLOWED_ORIGINS: http://localhost:5173
+      ENV: development
+      SPOTIFY_CLIENT_ID: 28867fcc89a245fb8e635355f67d7ae5
+      SPOTIFY_CLIENT_SECRET: 156ad8beb24546fba34e6d0b6ce14cc0
+      SPOTIFY_REDIRECT_URL: http://localhost:8080/api/spotify/callback
 
   postgres:
     environment:
