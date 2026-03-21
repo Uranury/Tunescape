@@ -11,11 +11,12 @@ services:
       LISTEN_ADDR: :8080
       JWT_KEY: dev-secret-key-not-for-production
       MIGRATIONS_PATH: ./migrations
-      ALLOWED_ORIGINS: http://localhost:5173
+      ALLOWED_ORIGINS: http://127.0.0.1:8080
       ENV: development
+      FRONTEND_URL: http://127.0.0.1:8080
       SPOTIFY_CLIENT_ID: 28867fcc89a245fb8e635355f67d7ae5
       SPOTIFY_CLIENT_SECRET: 156ad8beb24546fba34e6d0b6ce14cc0
-      SPOTIFY_REDIRECT_URL: http://localhost:8080/api/spotify/callback
+      SPOTIFY_REDIRECT_URL: http://127.0.0.1:8080/auth/spotify/callback
 
   postgres:
     environment:

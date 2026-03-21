@@ -2,13 +2,14 @@ package spotify
 
 import (
 	"context"
-	"gitlab.com/Uranury/tunescape/pkg/database"
 	"time"
+
+	"github.com/google/uuid"
+	"gitlab.com/Uranury/tunescape/pkg/database"
 )
 
 type Repository interface {
-	SaveAccess(ctx context.Context, accessToken string) error
-	SaveRefresh(ctx context.Context, refreshToken string) error
+	UpsertTokens(ctx context.Context, userID uuid.UUID, accessToken, refreshToken string, expiresAt time.Time) error
 }
 
 type repository struct {
@@ -19,18 +20,16 @@ func NewRepository(exec database.Executor) Repository {
 	return &repository{exec: exec}
 }
 
-func (r *repository) SaveRefresh(ctx context.Context, refreshToken string) error {
-	query := `INSERT INTO spotify_refresh (refresh_token) VALUES (?)`
-	_, err := r.exec.ExecContext(ctx, query, refreshToken)
+func (r *repository) UpsertTokens(ctx context.Context, userID uuid.UUID, accessToken, refreshToken string, expiresAt time.Time) error {
+	query := `
+		INSERT INTO spotify_tokens (user_id, access_token, refresh_token, expires_at)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (user_id) DO UPDATE SET
+			access_token  = EXCLUDED.access_token,
+			refresh_token = EXCLUDED.refresh_token,
+			expires_at    = EXCLUDED.expires_at,
+			updated_at    = NOW()
+	`
+	_, err := r.exec.ExecContext(ctx, query, userID, accessToken, refreshToken, expiresAt)
 	return err
-}
-
-func (r *repository) SaveAccess(ctx context.Context, accessToken string) error {
-	query := `INSERT INTO spotify_access (access_token) VALUES (?)`
-	_, err := r.exec.ExecContext(ctx, query, accessToken)
-	return err
-}
-
-func (r *repository) Delete(ctx context.Context, tokenExpiry time.Time) error {
-	query := `DELETE FROM spotify_access WHERE access_expiry`
 }

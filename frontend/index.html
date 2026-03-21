@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tunescape – OAuth Test</title>
+  <style>
+    body { font-family: monospace; max-width: 640px; margin: 60px auto; padding: 0 20px; }
+    button { padding: 10px 20px; cursor: pointer; margin: 6px 4px; }
+    input  { padding: 8px; margin: 4px; width: 260px; }
+    section { margin-bottom: 28px; border-bottom: 1px solid #ddd; padding-bottom: 16px; }
+    #output { background: #f4f4f4; padding: 16px; border-radius: 4px; white-space: pre-wrap; word-break: break-all; min-height: 40px; }
+    .error { color: crimson; }
+    .ok    { color: green; }
+  </style>
+</head>
+<body>
+  <h2>Tunescape – OAuth Test</h2>
+
+  <section>
+    <h3>1. Register</h3>
+    <input id="signup-email"    type="email"    placeholder="email"><br>
+    <input id="signup-password" type="password" placeholder="password (min 8 chars)"><br>
+    <input id="signup-name"     type="text"     placeholder="display name"><br>
+    <button onclick="signup()">Sign Up</button>
+  </section>
+
+  <section>
+    <h3>2. Log In</h3>
+    <input id="login-email"    type="email"    placeholder="email"><br>
+    <input id="login-password" type="password" placeholder="password"><br>
+    <button onclick="login()">Log In</button>
+  </section>
+
+  <section>
+    <h3>3. Connect Spotify (must be logged in first)</h3>
+    <button onclick="connectSpotify()">Connect Spotify</button>
+  </section>
+
+  <section>
+    <h3>Session</h3>
+    <button onclick="refresh()">Refresh Token</button>
+    <button onclick="logout()">Logout</button>
+  </section>
+
+  <h3>Output</h3>
+  <div id="output">—</div>
+
+  <script>
+    function show(data, isError) {
+      const el = document.getElementById('output');
+      el.className = isError ? 'error' : 'ok';
+      el.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    }
+
+    async function signup() {
+      const res = await fetch('/auth/signup', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email:        document.getElementById('signup-email').value,
+          password:     document.getElementById('signup-password').value,
+          display_name: document.getElementById('signup-name').value,
+        }),
+      });
+      show(await res.json(), !res.ok);
+    }
+
+    async function login() {
+      const res = await fetch('/auth/login', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email:    document.getElementById('login-email').value,
+          password: document.getElementById('login-password').value,
+        }),
+      });
+      show(await res.json(), !res.ok);
+    }
+
+    function connectSpotify() {
+      window.location.href = '/auth/spotify/login';
+    }
+
+    async function refresh() {
+      const res = await fetch('/auth/refresh', { method: 'POST', credentials: 'same-origin' });
+      show(await res.json(), !res.ok);
+    }
+
+    async function logout() {
+      const res = await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' });
+      show(res.ok ? 'Logged out.' : 'Logout failed.', !res.ok);
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('connected') === '1') {
+      history.replaceState(null, '', '/');
+      show('Spotify connected! Refresh token to verify session.', false);
+    } else if (params.get('error')) {
+      history.replaceState(null, '', '/');
+      const messages = {
+        not_logged_in:          'You must be logged in before connecting Spotify.',
+        session_expired:        'Your session expired. Please log in again.',
+        invalid_state:          'OAuth state mismatch — possible replay. Try again.',
+        spotify_exchange_failed:'Spotify rejected the authorization code. Try again.',
+        spotify_profile_failed: 'Could not fetch your Spotify profile. Make sure your Spotify account is added to the app\'s allowlist in the Spotify Developer Dashboard.',
+        spotify_already_linked: 'This Spotify account is already linked to another user.',
+        db_error:               'Server error saving your Spotify connection. Try again.',
+        missing_code:           'Spotify did not return an authorization code.',
+      };
+      show(messages[params.get('error')] ?? 'Spotify connection failed: ' + params.get('error'), true);
+    }
+  </script>
+</body>
+</html>

@@ -14,6 +14,7 @@ type Config struct {
 	ListenAddr     string   `yaml:"listen_addr" env:"LISTEN_ADDR" env-default:":8080"`
 	JWTKey         string   `yaml:"jwt_key" env:"JWT_KEY" env-required:"true"`
 	AllowedOrigins []string `yaml:"allowed_origins" env:"ALLOWED_ORIGINS" env-default:"http://localhost:5173"`
+	FrontendURL    string   `yaml:"frontend_url" env:"FRONTEND_URL" env-default:"http://localhost:5173"`
 }
 
 type Spotify struct {

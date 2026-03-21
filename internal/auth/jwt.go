@@ -6,17 +6,19 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 )
 
 var AccessTokenTTL = time.Minute * 5
 
 type TokenService interface {
-	Generate(userID int64) (string, error)
+	Generate(userID uuid.UUID, role string) (string, error)
 	Validate(tokenString string) (*Claims, error)
 }
 
 type Claims struct {
-	UserID int64 `json:"user_id"`
+	UserID uuid.UUID `json:"user_id"`
+	Role   string    `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -32,9 +34,10 @@ func NewTokenService(jwtKey []byte, logger *slog.Logger) TokenService {
 	}
 }
 
-func (s *jwtService) Generate(userID int64) (string, error) {
+func (s *jwtService) Generate(userID uuid.UUID, role string) (string, error) {
 	claims := Claims{
 		UserID: userID,
+		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(AccessTokenTTL)),
 		},

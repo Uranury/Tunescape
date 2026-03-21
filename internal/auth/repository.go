@@ -26,11 +26,13 @@ func NewRepository(exec database.Executor) Repository {
 
 func (repo *repository) Save(ctx context.Context, token *RefreshToken) error {
 	query := `
-		INSERT INTO refresh_tokens (user_id, token_hash, expires_at, user_agent, ip)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO refresh_tokens (user_id, role, token_hash, expires_at, user_agent, ip)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
 	`
-	return repo.executor.QueryRowxContext(ctx, query, token.UserID, token.TokenHash, token.ExpiresAt, token.UserAgent, token.IP).Scan(&token.ID)
+	return repo.executor.QueryRowxContext(ctx, query,
+		token.UserID, token.Role, token.TokenHash, token.ExpiresAt, token.UserAgent, token.IP,
+	).Scan(&token.ID)
 }
 
 func (repo *repository) FindByHash(ctx context.Context, tokenHash string) (*RefreshToken, error) {
@@ -47,8 +49,8 @@ func (repo *repository) FindByHashForUpdate(ctx context.Context, tokenHash strin
 	query := `
 		SELECT * FROM refresh_tokens
 		WHERE token_hash = $1 AND revoked_at IS NULL AND expires_at > NOW()
-		FOR UPDATE 
-    `
+		FOR UPDATE
+	`
 	token := &RefreshToken{}
 	err := repo.executor.QueryRowxContext(ctx, query, tokenHash).StructScan(token)
 	return token, err

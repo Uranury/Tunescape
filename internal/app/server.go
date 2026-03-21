@@ -11,17 +11,20 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"gitlab.com/Uranury/tunescape/internal/auth"
 	"gitlab.com/Uranury/tunescape/internal/infra"
+	"gitlab.com/Uranury/tunescape/internal/spotify"
 )
 
 type Server struct {
-	router     *gin.Engine
-	logger     *slog.Logger
-	httpServer *http.Server
-	// TODO: expand with services
+	router         *gin.Engine
+	logger         *slog.Logger
+	httpServer     *http.Server
+	authHandler    *auth.Handler
+	spotifyHandler *spotify.Handler
 }
 
-func NewServer(deps *infra.Deps) *Server {
+func NewServer(deps *infra.Deps, authHandler *auth.Handler, spotifyHandler *spotify.Handler) *Server {
 	router := gin.New()
 	router.Use(
 		gin.Recovery(),
@@ -36,8 +39,10 @@ func NewServer(deps *infra.Deps) *Server {
 	)
 
 	server := &Server{
-		router: router,
-		logger: deps.Logger,
+		router:         router,
+		logger:         deps.Logger,
+		authHandler:    authHandler,
+		spotifyHandler: spotifyHandler,
 		httpServer: &http.Server{
 			Addr:         deps.Config.ListenAddr,
 			Handler:      router,
@@ -76,5 +81,15 @@ func (s *Server) Shutdown(ctx context.Context) error {
 }
 
 func (s *Server) registerRoutes() {
-	// routes go here
+	s.router.StaticFile("/", "./frontend/index.html")
+
+	authGroup := s.router.Group("/auth")
+	{
+		authGroup.POST("/login", s.authHandler.Login)
+		authGroup.POST("/signup", s.authHandler.Signup)
+		authGroup.POST("/logout", s.authHandler.Logout)
+		authGroup.POST("/refresh", s.authHandler.Refresh)
+		authGroup.GET("/spotify/login", s.spotifyHandler.LoginHandler)
+		authGroup.GET("/spotify/callback", s.spotifyHandler.CallbackHandler)
+	}
 }

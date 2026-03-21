@@ -19,6 +19,8 @@ type SpotifyProfile struct {
 	ID          string `json:"id"`
 	Email       string `json:"email"`
 	DisplayName string `json:"display_name"`
+	Country     string `json:"country"`
+	Product     string `json:"product"`
 	Images      []struct {
 		URL string `json:"url"`
 	} `json:"images"`
