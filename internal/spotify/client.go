@@ -55,7 +55,9 @@ func (c *Client) getMe(ctx context.Context, accessToken string) (*SpotifyProfile
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("spotify /me returned %d", resp.StatusCode)
 	}
