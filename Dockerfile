@@ -17,6 +17,7 @@ RUN apk add --no-cache ca-certificates
 
 COPY --from=builder /app/app .
 COPY --from=builder /app/migrations ./migrations
+COPY --from=builder /app/frontend ./frontend
 
 EXPOSE 8080
 CMD ["./app"]

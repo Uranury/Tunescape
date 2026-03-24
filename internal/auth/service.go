@@ -11,13 +11,14 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/google/uuid"
 	"gitlab.com/Uranury/tunescape/pkg/database"
 )
 
 var RefreshTokenTTL = time.Hour * 24 * 30
 
 type RefreshTokenService interface {
-	Generate(ctx context.Context, userID int64, userAgent string, ip string) (string, error)
+	Generate(ctx context.Context, userID uuid.UUID, role string, userAgent string, ip string) (string, error)
 	Validate(ctx context.Context, tokenString string) (*RefreshToken, error)
 	Refresh(ctx context.Context, refreshToken string) (string, string, error)
 	Revoke(ctx context.Context, refreshToken string) error
@@ -41,7 +42,7 @@ func NewRefreshService(tokenSvc TokenService, repo Repository, txProvider databa
 	}
 }
 
-func (s *refreshTokenService) Generate(ctx context.Context, userID int64, userAgent string, ip string) (string, error) {
+func (s *refreshTokenService) Generate(ctx context.Context, userID uuid.UUID, role string, userAgent string, ip string) (string, error) {
 	b := make([]byte, 32)
 	_, err := rand.Read(b)
 	if err != nil {
@@ -53,6 +54,7 @@ func (s *refreshTokenService) Generate(ctx context.Context, userID int64, userAg
 
 	refreshToken := RefreshToken{
 		UserID:    userID,
+		Role:      role,
 		TokenHash: tokenHash,
 		ExpiresAt: time.Now().Add(RefreshTokenTTL),
 		UserAgent: userAgent,
@@ -97,7 +99,7 @@ func (s *refreshTokenService) Refresh(ctx context.Context, refreshToken string) 
 			return fmt.Errorf("validate refresh token: %w", err)
 		}
 
-		accessToken, err = s.tokenSvc.Generate(token.UserID)
+		accessToken, err = s.tokenSvc.Generate(token.UserID, token.Role)
 		if err != nil {
 			return fmt.Errorf("generate access token: %w", err)
 		}
@@ -116,6 +118,7 @@ func (s *refreshTokenService) Refresh(ctx context.Context, refreshToken string) 
 
 		newRefreshToken := RefreshToken{
 			UserID:    token.UserID,
+			Role:      token.Role,
 			TokenHash: newHash,
 			ExpiresAt: time.Now().Add(RefreshTokenTTL),
 			UserAgent: token.UserAgent,

@@ -1,0 +1,4 @@
+ALTER TABLE users
+  ADD COLUMN password TEXT NOT NULL,
+  ADD COLUMN role     TEXT NOT NULL DEFAULT 'user',
+  ALTER COLUMN spotify_id DROP NOT NULL;
