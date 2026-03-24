@@ -15,7 +15,7 @@ services:
       ENV: development
       FRONTEND_URL: http://127.0.0.1:8080
       SPOTIFY_CLIENT_ID: 28867fcc89a245fb8e635355f67d7ae5
-      SPOTIFY_CLIENT_SECRET: 156ad8beb24546fba34e6d0b6ce14cc0
+      SPOTIFY_CLIENT_SECRET: 6f29d641a920471eabb9242b07c55b9a
       SPOTIFY_REDIRECT_URL: http://127.0.0.1:8080/auth/spotify/callback
 
   postgres:

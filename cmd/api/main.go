@@ -35,12 +35,10 @@ func main() {
 
 	spotifyClient := spotify.NewClient(deps.Config.Spotify, deps.HTTPClient)
 	spotifyRepo := spotify.NewRepository(deps.DBConn)
-	spotifySvc := spotify.NewService(spotifyRepo)
+	spotifySvc := spotify.NewService(spotifyRepo, userRepo, spotifyClient)
 	spotifyHandler := spotify.NewHandler(
-		spotifyClient,
 		spotifySvc,
 		authSvc,
-		userRepo,
 		deps.Logger,
 		deps.Config.IsProd(),
 		deps.Config.FrontendURL,
