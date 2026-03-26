@@ -1,0 +1,197 @@
+basePath: /
+definitions:
+  apperrors.HTTPError:
+    properties:
+      code:
+        type: integer
+      details: {}
+      message:
+        type: string
+    type: object
+  auth.loginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  auth.signupRequest:
+    properties:
+      display_name:
+        minLength: 1
+        type: string
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - display_name
+    - email
+    - password
+    type: object
+  auth.tokenResponse:
+    properties:
+      access_token:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: Tunescape backend API.
+  title: Tunescape API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Validates user credentials, creates access token and refresh token
+        cookie.
+      parameters:
+      - description: Login request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/auth.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.tokenResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+      summary: Login
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      description: Revokes refresh token and clears the refresh_token cookie.
+      parameters:
+      - description: Refresh token (cookie)
+        in: header
+        name: refresh_token
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+      summary: Logout
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      description: Validates refresh token cookie, revokes it, and issues a new access
+        token and refresh token cookie.
+      parameters:
+      - description: Refresh token (cookie)
+        in: header
+        name: refresh_token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.tokenResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+      summary: Refresh access token
+      tags:
+      - auth
+  /auth/signup:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account and issues access token and refresh
+        token cookie.
+      parameters:
+      - description: Signup request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/auth.signupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/auth.tokenResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+      summary: Signup
+      tags:
+      - auth
+  /auth/spotify/callback:
+    get:
+      description: Handles Spotify OAuth callback, links Spotify account to the current
+        user, and redirects back to the frontend.
+      parameters:
+      - description: Spotify authorization code
+        in: query
+        name: code
+        required: true
+        type: string
+      - description: Spotify state
+        in: query
+        name: state
+        required: true
+        type: string
+      - description: oauth_state cookie value
+        in: header
+        name: oauth_state
+        required: true
+        type: string
+      - description: refresh_token cookie value
+        in: header
+        name: refresh_token
+        required: true
+        type: string
+      responses:
+        "302":
+          description: Found (redirect to frontend with connected=1 or error=...)
+      summary: Spotify OAuth callback
+      tags:
+      - spotify
+  /auth/spotify/login:
+    get:
+      description: Redirects to Spotify authorization endpoint and sets oauth_state
+        cookie.
+      responses:
+        "302":
+          description: Found (redirect to Spotify authorization endpoint)
+      summary: Spotify OAuth login
+      tags:
+      - spotify
+swagger: "2.0"

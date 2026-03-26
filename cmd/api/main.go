@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	_ "gitlab.com/Uranury/tunescape/docs"
 	"gitlab.com/Uranury/tunescape/internal/app"
 	"gitlab.com/Uranury/tunescape/internal/auth"
 	"gitlab.com/Uranury/tunescape/internal/infra"
@@ -16,6 +17,10 @@ import (
 	"gitlab.com/Uranury/tunescape/pkg/database"
 )
 
+// @title Tunescape API
+// @version 1.0
+// @description Tunescape backend API.
+// @BasePath /
 func main() {
 	deps, cleanup, err := infra.New(context.Background())
 	if err != nil {

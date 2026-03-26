@@ -41,6 +41,16 @@ type tokenResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
+// @Summary Login
+// @Description Validates user credentials, creates access token and refresh token cookie.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param body body loginRequest true "Login request"
+// @Success 200 {object} tokenResponse
+// @Failure 401 {object} apperrors.HTTPError
+// @Failure 500 {object} apperrors.HTTPError
+// @Router /auth/login [post]
 func (h *Handler) Login(c *gin.Context) {
 	req, ok := validation.BindAndValidate[loginRequest](c)
 	if !ok {
@@ -73,6 +83,16 @@ func (h *Handler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, tokenResponse{AccessToken: accessToken})
 }
 
+// @Summary Signup
+// @Description Creates a new user account and issues access token and refresh token cookie.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param body body signupRequest true "Signup request"
+// @Success 201 {object} tokenResponse
+// @Failure 409 {object} apperrors.HTTPError
+// @Failure 500 {object} apperrors.HTTPError
+// @Router /auth/signup [post]
 func (h *Handler) Signup(c *gin.Context) {
 	req, ok := validation.BindAndValidate[signupRequest](c)
 	if !ok {
@@ -105,6 +125,15 @@ func (h *Handler) Signup(c *gin.Context) {
 	c.JSON(http.StatusCreated, tokenResponse{AccessToken: accessToken})
 }
 
+// @Summary Refresh access token
+// @Description Validates refresh token cookie, revokes it, and issues a new access token and refresh token cookie.
+// @Tags auth
+// @Produce json
+// @Param refresh_token header string true "Refresh token (cookie)"
+// @Success 200 {object} tokenResponse
+// @Failure 401 {object} apperrors.HTTPError
+// @Failure 500 {object} apperrors.HTTPError
+// @Router /auth/refresh [post]
 func (h *Handler) Refresh(c *gin.Context) {
 	cookie, err := c.Request.Cookie("refresh_token")
 	if err != nil {
@@ -122,6 +151,13 @@ func (h *Handler) Refresh(c *gin.Context) {
 	c.JSON(http.StatusOK, tokenResponse{AccessToken: accessToken})
 }
 
+// @Summary Logout
+// @Description Revokes refresh token and clears the refresh_token cookie.
+// @Tags auth
+// @Produce json
+// @Param refresh_token header string false "Refresh token (cookie)"
+// @Success 204 {string} string "No Content"
+// @Router /auth/logout [post]
 func (h *Handler) Logout(c *gin.Context) {
 	cookie, err := c.Request.Cookie("refresh_token")
 	if err != nil {

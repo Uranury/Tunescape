@@ -37,6 +37,11 @@ func NewHandler(
 	}
 }
 
+// @Summary Spotify OAuth login
+// @Description Redirects to Spotify authorization endpoint and sets oauth_state cookie.
+// @Tags spotify
+// @Success 302 "Found (redirect to Spotify authorization endpoint)"
+// @Router /auth/spotify/login [get]
 func (h *Handler) LoginHandler(c *gin.Context) {
 	state, err := generateRandomState()
 	if err != nil {
@@ -56,6 +61,15 @@ func (h *Handler) LoginHandler(c *gin.Context) {
 	c.Redirect(http.StatusFound, h.svc.AuthURL(state))
 }
 
+// @Summary Spotify OAuth callback
+// @Description Handles Spotify OAuth callback, links Spotify account to the current user, and redirects back to the frontend.
+// @Tags spotify
+// @Param code query string true "Spotify authorization code"
+// @Param state query string true "Spotify state"
+// @Param oauth_state header string true "oauth_state cookie value"
+// @Param refresh_token header string true "refresh_token cookie value"
+// @Success 302 "Found (redirect to frontend with connected=1 or error=...)"
+// @Router /auth/spotify/callback [get]
 func (h *Handler) CallbackHandler(c *gin.Context) {
 	errRedirect := func(msg string) {
 		c.Redirect(http.StatusFound, h.frontendURL+"?error="+msg)
