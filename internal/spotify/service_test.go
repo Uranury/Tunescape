@@ -17,11 +17,19 @@ import (
 )
 
 type mockSpotifyRepo struct {
-	upsertFn func(ctx context.Context, userID uuid.UUID, accessToken, refreshToken string, expiresAt time.Time) error
+	upsertFn      func(ctx context.Context, userID uuid.UUID, accessToken, refreshToken string, expiresAt time.Time) error
+	getByUserIDFn func(ctx context.Context, userID uuid.UUID) (*Token, error)
 }
 
 func (m *mockSpotifyRepo) UpsertTokens(ctx context.Context, userID uuid.UUID, accessToken, refreshToken string, expiresAt time.Time) error {
 	return m.upsertFn(ctx, userID, accessToken, refreshToken, expiresAt)
+}
+
+func (m *mockSpotifyRepo) GetByUserID(ctx context.Context, userID uuid.UUID) (*Token, error) {
+	if m.getByUserIDFn != nil {
+		return m.getByUserIDFn(ctx, userID)
+	}
+	return nil, nil
 }
 
 type mockUserRepo struct {
@@ -117,7 +125,6 @@ func TestSpotifyService_ConnectAccount_Success(t *testing.T) {
 	userID := uuid.New()
 	authCode := "code123"
 
-	// Custom transport: return token and /me responses without real TCP connections.
 	httpClient := &http.Client{
 		Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 			switch {
@@ -217,7 +224,6 @@ func TestSpotifyService_ConnectAccount_Success(t *testing.T) {
 
 	svc := NewService(repo, userRepo, c)
 	before := time.Now()
-	// oauth2.Config.Exchange uses an optional HTTP client from context.
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, httpClient)
 	if err := svc.ConnectAccount(ctx, userID, authCode); err != nil {
 		t.Fatalf("expected nil error, got %v", err)
@@ -250,7 +256,6 @@ func TestSpotifyService_ConnectAccount_Success(t *testing.T) {
 		t.Fatalf("unexpected refresh token: %q", gotRefresh)
 	}
 
-	// oauth2 sets expiry based on current time + expires_in.
 	lower := before.Add(3600*time.Second - 10*time.Second)
 	upper := after.Add(3600*time.Second + 10*time.Second)
 	if gotExpiresAt.Before(lower) || gotExpiresAt.After(upper) {

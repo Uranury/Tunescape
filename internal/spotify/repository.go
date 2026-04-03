@@ -2,14 +2,27 @@ package spotify
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
+	"gitlab.com/Uranury/tunescape/pkg/apperrors"
 	"gitlab.com/Uranury/tunescape/pkg/database"
 )
 
+type Token struct {
+	ID           int64     `db:"id"`
+	UserID       uuid.UUID `db:"user_id"`
+	AccessToken  string    `db:"access_token"`
+	RefreshToken string    `db:"refresh_token"`
+	ExpiresAt    time.Time `db:"expires_at"`
+	UpdatedAt    time.Time `db:"updated_at"`
+}
+
 type Repository interface {
 	UpsertTokens(ctx context.Context, userID uuid.UUID, accessToken, refreshToken string, expiresAt time.Time) error
+	GetByUserID(ctx context.Context, userID uuid.UUID) (*Token, error)
 }
 
 type repository struct {
@@ -32,4 +45,17 @@ func (r *repository) UpsertTokens(ctx context.Context, userID uuid.UUID, accessT
 	`
 	_, err := r.exec.ExecContext(ctx, query, userID, accessToken, refreshToken, expiresAt)
 	return err
+}
+
+func (r *repository) GetByUserID(ctx context.Context, userID uuid.UUID) (*Token, error) {
+	query := `SELECT * FROM spotify_tokens WHERE user_id = $1`
+	token := &Token{}
+	err := r.exec.QueryRowxContext(ctx, query, userID).StructScan(token)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, apperrors.ErrSpotifyNotConnected
+		}
+		return nil, err
+	}
+	return token, nil
 }

@@ -12,6 +12,8 @@ import (
 	"gitlab.com/Uranury/tunescape/internal/app"
 	"gitlab.com/Uranury/tunescape/internal/auth"
 	"gitlab.com/Uranury/tunescape/internal/infra"
+	"gitlab.com/Uranury/tunescape/internal/middleware"
+	"gitlab.com/Uranury/tunescape/internal/snapshot"
 	"gitlab.com/Uranury/tunescape/internal/spotify"
 	"gitlab.com/Uranury/tunescape/internal/user"
 	"gitlab.com/Uranury/tunescape/pkg/database"
@@ -49,7 +51,13 @@ func main() {
 		deps.Config.FrontendURL,
 	)
 
-	server := app.NewServer(deps, authHandler, spotifyHandler)
+	snapshotRepo := snapshot.NewRepository(deps.DBConn)
+	snapshotSvc := snapshot.NewService(snapshotRepo, spotifyRepo, spotifyClient, txProvider)
+	snapshotHandler := snapshot.NewHandler(snapshotSvc)
+
+	authMiddleware := middleware.NewAuth(tokenSvc)
+
+	server := app.NewServer(deps, authHandler, spotifyHandler, snapshotHandler, authMiddleware)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

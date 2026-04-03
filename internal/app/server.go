@@ -15,18 +15,28 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"gitlab.com/Uranury/tunescape/internal/auth"
 	"gitlab.com/Uranury/tunescape/internal/infra"
+	"gitlab.com/Uranury/tunescape/internal/middleware"
+	"gitlab.com/Uranury/tunescape/internal/snapshot"
 	"gitlab.com/Uranury/tunescape/internal/spotify"
 )
 
 type Server struct {
-	router         *gin.Engine
-	logger         *slog.Logger
-	httpServer     *http.Server
-	authHandler    *auth.Handler
-	spotifyHandler *spotify.Handler
+	router          *gin.Engine
+	logger          *slog.Logger
+	httpServer      *http.Server
+	authHandler     *auth.Handler
+	spotifyHandler  *spotify.Handler
+	snapshotHandler *snapshot.Handler
+	authMiddleware  *middleware.Auth
 }
 
-func NewServer(deps *infra.Deps, authHandler *auth.Handler, spotifyHandler *spotify.Handler) *Server {
+func NewServer(
+	deps *infra.Deps,
+	authHandler *auth.Handler,
+	spotifyHandler *spotify.Handler,
+	snapshotHandler *snapshot.Handler,
+	authMiddleware *middleware.Auth,
+) *Server {
 	router := gin.New()
 	router.Use(
 		gin.Recovery(),
@@ -41,10 +51,12 @@ func NewServer(deps *infra.Deps, authHandler *auth.Handler, spotifyHandler *spot
 	)
 
 	server := &Server{
-		router:         router,
-		logger:         deps.Logger,
-		authHandler:    authHandler,
-		spotifyHandler: spotifyHandler,
+		router:          router,
+		logger:          deps.Logger,
+		authHandler:     authHandler,
+		spotifyHandler:  spotifyHandler,
+		snapshotHandler: snapshotHandler,
+		authMiddleware:  authMiddleware,
 		httpServer: &http.Server{
 			Addr:         deps.Config.ListenAddr,
 			Handler:      router,
@@ -94,5 +106,10 @@ func (s *Server) registerRoutes() {
 		authGroup.POST("/refresh", s.authHandler.Refresh)
 		authGroup.GET("/spotify/login", s.spotifyHandler.LoginHandler)
 		authGroup.GET("/spotify/callback", s.spotifyHandler.CallbackHandler)
+	}
+
+	meGroup := s.router.Group("/me", s.authMiddleware.JWTAuth())
+	{
+		meGroup.POST("/snapshots", s.snapshotHandler.CreateSnapshot)
 	}
 }

@@ -1,251 +1,893 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Tunescape</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Tunescape - Your Spotify Music Analytics</title>
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
 
-    body {
-      font-family: system-ui, sans-serif;
-      background: #0f0f0f;
-      color: #e8e8e8;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+			body {
+				font-family:
+					-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+					'Helvetica Neue', sans-serif;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				min-height: 100vh;
+			}
 
-    .page { display: none; width: 100%; max-width: 400px; padding: 0 20px; }
-    .page.active { display: block; }
+			/* Navbar */
+			.navbar {
+				background: rgba(255, 255, 255, 0.95);
+				backdrop-filter: blur(10px);
+				padding: 1rem 2rem;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+				position: sticky;
+				top: 0;
+				z-index: 100;
+			}
 
-    h1 { font-size: 1.8rem; margin-bottom: 8px; }
-    .subtitle { color: #888; margin-bottom: 32px; font-size: 0.9rem; }
+			.logo {
+				font-size: 1.5rem;
+				font-weight: bold;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				-webkit-background-clip: text;
+				-webkit-text-fill-color: transparent;
+				background-clip: text;
+			}
 
-    .tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid #2a2a2a; }
-    .tab-btn {
-      background: none; border: none; color: #888; padding: 10px 20px;
-      cursor: pointer; font-size: 0.95rem; border-bottom: 2px solid transparent;
-      margin-bottom: -1px;
-    }
-    .tab-btn.active { color: #e8e8e8; border-bottom-color: #1db954; }
+			.nav-buttons {
+				display: flex;
+				gap: 1rem;
+			}
 
-    .form-group { margin-bottom: 14px; }
-    label { display: block; font-size: 0.8rem; color: #888; margin-bottom: 5px; }
-    input {
-      width: 100%; padding: 10px 12px; background: #1a1a1a;
-      border: 1px solid #2a2a2a; border-radius: 6px;
-      color: #e8e8e8; font-size: 0.95rem; outline: none;
-    }
-    input:focus { border-color: #1db954; }
+			/* Main Container */
+			.container {
+				max-width: 1200px;
+				margin: 0 auto;
+				padding: 2rem;
+			}
 
-    .btn {
-      width: 100%; padding: 11px; border: none; border-radius: 6px;
-      font-size: 0.95rem; font-weight: 600; cursor: pointer; margin-top: 4px;
-    }
-    .btn-primary { background: #1db954; color: #000; }
-    .btn-primary:hover { background: #1ed760; }
-    .btn-secondary {
-      background: none; border: 1px solid #2a2a2a; color: #888;
-      margin-top: 10px;
-    }
-    .btn-secondary:hover { border-color: #444; color: #e8e8e8; }
-    .btn-danger { background: none; border: 1px solid #c0392b; color: #c0392b; margin-top: 10px; }
-    .btn-danger:hover { background: #c0392b; color: #fff; }
+			/* Auth Forms */
+			.auth-container {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				min-height: 80vh;
+			}
 
-    .msg { padding: 10px 12px; border-radius: 6px; font-size: 0.88rem; margin-top: 14px; }
-    .msg.error { background: #2a1010; color: #e57373; border: 1px solid #5a2020; }
-    .msg.ok    { background: #0d2a15; color: #81c784; border: 1px solid #1b5e20; }
+			.auth-card {
+				background: white;
+				border-radius: 20px;
+				padding: 2rem;
+				width: 100%;
+				max-width: 450px;
+				box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+			}
 
-    /* dashboard */
-    .spotify-card {
-      background: #1a1a1a; border: 1px solid #2a2a2a;
-      border-radius: 10px; padding: 24px; margin-bottom: 16px; text-align: center;
-    }
-    .spotify-card p { color: #888; font-size: 0.9rem; margin-bottom: 16px; }
+			.auth-card h2 {
+				text-align: center;
+				margin-bottom: 2rem;
+				color: #333;
+			}
 
-    /* result page */
-    .result-icon { font-size: 3rem; margin-bottom: 16px; }
-    .result-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; }
-    .result-body { color: #888; font-size: 0.9rem; margin-bottom: 24px; line-height: 1.5; }
-  </style>
-</head>
-<body>
+			.form-group {
+				margin-bottom: 1.5rem;
+			}
 
-  <!-- Auth page -->
-  <div id="auth-page" class="page">
-    <h1>Tunescape</h1>
-    <p class="subtitle">Sign in to continue</p>
-    <div class="tabs">
-      <button class="tab-btn active" onclick="showTab('login')">Log In</button>
-      <button class="tab-btn" onclick="showTab('register')">Register</button>
-    </div>
+			.form-group label {
+				display: block;
+				margin-bottom: 0.5rem;
+				color: #555;
+				font-weight: 500;
+			}
 
-    <div id="tab-login">
-      <div class="form-group">
-        <label>Email</label>
-        <input id="login-email" type="email" placeholder="you@example.com">
-      </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input id="login-password" type="password" placeholder="••••••••">
-      </div>
-      <button class="btn btn-primary" onclick="login()">Log In</button>
-      <div id="login-msg"></div>
-    </div>
+			.form-group input {
+				width: 100%;
+				padding: 0.75rem;
+				border: 2px solid #e0e0e0;
+				border-radius: 10px;
+				font-size: 1rem;
+				transition: all 0.3s;
+			}
 
-    <div id="tab-register" style="display:none">
-      <div class="form-group">
-        <label>Email</label>
-        <input id="reg-email" type="email" placeholder="you@example.com">
-      </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input id="reg-password" type="password" placeholder="min 8 characters">
-      </div>
-      <div class="form-group">
-        <label>Display name</label>
-        <input id="reg-name" type="text" placeholder="Your name">
-      </div>
-      <button class="btn btn-primary" onclick="register()">Create Account</button>
-      <div id="reg-msg"></div>
-    </div>
-  </div>
+			.form-group input:focus {
+				outline: none;
+				border-color: #667eea;
+			}
 
-  <!-- Dashboard page -->
-  <div id="dashboard-page" class="page">
-    <h1>Tunescape</h1>
-    <p class="subtitle">Manage your account</p>
-    <div class="spotify-card">
-      <p>Connect your Spotify account to enable music analytics.</p>
-      <button class="btn btn-primary" onclick="connectSpotify()">Connect Spotify</button>
-    </div>
-    <button class="btn btn-danger" onclick="logout()">Log Out</button>
-  </div>
+			.btn {
+				width: 100%;
+				padding: 0.75rem;
+				border: none;
+				border-radius: 10px;
+				font-size: 1rem;
+				font-weight: 600;
+				cursor: pointer;
+				transition: all 0.3s;
+			}
 
-  <!-- Result page -->
-  <div id="result-page" class="page">
-    <div id="result-icon" class="result-icon"></div>
-    <div id="result-title" class="result-title"></div>
-    <div id="result-body" class="result-body"></div>
-    <button class="btn btn-primary" onclick="goBack()">Continue</button>
-  </div>
+			.btn-primary {
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				color: white;
+			}
 
-  <script>
-    // ── routing ──────────────────────────────────────────────────────────────
+			.btn-primary:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+			}
 
-    function showPage(id) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-    }
+			.btn-spotify {
+				background: #1db954;
+				color: white;
+				margin-top: 1rem;
+			}
 
-    function showTab(tab) {
-      document.getElementById('tab-login').style.display    = tab === 'login'    ? '' : 'none';
-      document.getElementById('tab-register').style.display = tab === 'register' ? '' : 'none';
-      document.querySelectorAll('.tab-btn').forEach((b, i) => {
-        b.classList.toggle('active', (i === 0) === (tab === 'login'));
-      });
-    }
+			.btn-spotify:hover {
+				background: #1ed760;
+			}
 
-    function showMsg(id, text, isError) {
-      const el = document.getElementById(id);
-      el.className = 'msg ' + (isError ? 'error' : 'ok');
-      el.textContent = text;
-    }
+			.btn-outline {
+				background: transparent;
+				border: 2px solid #667eea;
+				color: #667eea;
+			}
 
-    function showResult(success, title, body) {
-      document.getElementById('result-icon').textContent  = success ? '✓' : '✗';
-      document.getElementById('result-title').textContent = title;
-      document.getElementById('result-body').textContent  = body;
-      document.getElementById('result-icon').style.color  = success ? '#1db954' : '#e57373';
-      showPage('result-page');
-    }
+			.switch-auth {
+				text-align: center;
+				margin-top: 1.5rem;
+				color: #666;
+			}
 
-    function goBack() {
-      showPage('dashboard-page');
-    }
+			.switch-auth a {
+				color: #667eea;
+				cursor: pointer;
+				text-decoration: none;
+				font-weight: 600;
+			}
 
-    // ── init ─────────────────────────────────────────────────────────────────
+			/* Dashboard */
+			.dashboard-container {
+				display: none;
+			}
 
-    const ERROR_MESSAGES = {
-      not_logged_in:          'You must be logged in before connecting Spotify.',
-      session_expired:        'Your session expired. Please log in again.',
-      invalid_state:          'OAuth state mismatch — possible replay. Try again.',
-      spotify_exchange_failed:'Spotify rejected the authorization code. Try again.',
-      spotify_profile_failed: 'Could not fetch your Spotify profile. Make sure your Spotify account is added to the app\'s allowlist in the Spotify Developer Dashboard.',
-      spotify_already_linked: 'This Spotify account is already linked to another user.',
-      db_error:               'Server error saving your Spotify connection. Try again.',
-      missing_code:           'Spotify did not return an authorization code.',
-    };
+			.dashboard-container.active {
+				display: block;
+			}
 
-    (async function init() {
-      const params = new URLSearchParams(window.location.search);
-      history.replaceState(null, '', '/');
+			.welcome-header {
+				background: white;
+				border-radius: 20px;
+				padding: 2rem;
+				margin-bottom: 2rem;
+				box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+			}
 
-      if (params.get('connected') === '1') {
-        showResult(true, 'Spotify Connected!', 'Your account is linked. Music analytics are now available.');
-        return;
-      }
+			.user-info {
+				display: flex;
+				align-items: center;
+				gap: 1.5rem;
+				flex-wrap: wrap;
+			}
 
-      if (params.get('error')) {
-        const msg = ERROR_MESSAGES[params.get('error')] ?? 'Spotify connection failed: ' + params.get('error');
-        showResult(false, 'Connection Failed', msg);
-        return;
-      }
+			.user-avatar {
+				width: 80px;
+				height: 80px;
+				border-radius: 50%;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 2rem;
+				color: white;
+			}
 
-      // check session
-      const res = await fetch('/auth/refresh', { method: 'POST', credentials: 'same-origin' });
-      showPage(res.ok ? 'dashboard-page' : 'auth-page');
-    })();
+			.user-avatar img {
+				width: 100%;
+				height: 100%;
+				border-radius: 50%;
+				object-fit: cover;
+			}
 
-    // ── auth ─────────────────────────────────────────────────────────────────
+			.spotify-status {
+				display: inline-flex;
+				align-items: center;
+				gap: 0.5rem;
+				padding: 0.5rem 1rem;
+				border-radius: 20px;
+				font-size: 0.875rem;
+				font-weight: 600;
+			}
 
-    async function login() {
-      const res = await fetch('/auth/login', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email:    document.getElementById('login-email').value,
-          password: document.getElementById('login-password').value,
-        }),
-      });
-      if (res.ok) {
-        showPage('dashboard-page');
-      } else {
-        const data = await res.json().catch(() => ({}));
-        showMsg('login-msg', data.error ?? 'Invalid email or password.', true);
-      }
-    }
+			.spotify-connected {
+				background: #1db95420;
+				color: #1db954;
+			}
 
-    async function register() {
-      const res = await fetch('/auth/signup', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email:        document.getElementById('reg-email').value,
-          password:     document.getElementById('reg-password').value,
-          display_name: document.getElementById('reg-name').value,
-        }),
-      });
-      if (res.ok) {
-        showMsg('reg-msg', 'Account created! You can now log in.', false);
-        showTab('login');
-      } else {
-        const data = await res.json().catch(() => ({}));
-        showMsg('reg-msg', data.error ?? 'Registration failed.', true);
-      }
-    }
+			.spotify-disconnected {
+				background: #ff444420;
+				color: #ff4444;
+			}
 
-    async function logout() {
-      await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' });
-      showPage('auth-page');
-    }
+			/* Stats Cards */
+			.stats-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+				gap: 1.5rem;
+				margin-bottom: 2rem;
+			}
 
-    function connectSpotify() {
-      window.location.href = '/auth/spotify/login';
-    }
-  </script>
-</body>
+			.stat-card {
+				background: white;
+				border-radius: 15px;
+				padding: 1.5rem;
+				text-align: center;
+				box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+			}
+
+			.stat-number {
+				font-size: 2.5rem;
+				font-weight: bold;
+				color: #667eea;
+				margin-bottom: 0.5rem;
+			}
+
+			.stat-label {
+				color: #666;
+				font-size: 0.875rem;
+			}
+
+			/* Tracks List */
+			.tracks-section {
+				background: white;
+				border-radius: 20px;
+				padding: 2rem;
+				margin-bottom: 2rem;
+				box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+			}
+
+			.section-header {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 1.5rem;
+				flex-wrap: wrap;
+				gap: 1rem;
+			}
+
+			.tracks-list {
+				display: grid;
+				gap: 0.75rem;
+			}
+
+			.track-item {
+				display: flex;
+				align-items: center;
+				gap: 1rem;
+				padding: 1rem;
+				background: #f8f9fa;
+				border-radius: 10px;
+				transition: all 0.3s;
+			}
+
+			.track-item:hover {
+				transform: translateX(5px);
+				background: #e9ecef;
+			}
+
+			.track-rank {
+				font-size: 1.25rem;
+				font-weight: bold;
+				color: #667eea;
+				min-width: 50px;
+			}
+
+			.track-info {
+				flex: 1;
+			}
+
+			.track-name {
+				font-weight: 600;
+				color: #333;
+				margin-bottom: 0.25rem;
+			}
+
+			.track-popularity {
+				font-size: 0.75rem;
+				color: #666;
+			}
+
+			.popularity-bar {
+				width: 100px;
+				height: 6px;
+				background: #e0e0e0;
+				border-radius: 3px;
+				overflow: hidden;
+			}
+
+			.popularity-fill {
+				height: 100%;
+				background: linear-gradient(90deg, #667eea, #764ba2);
+				transition: width 0.5s ease;
+			}
+
+			/* Loading Spinner */
+			.loading {
+				display: none;
+				text-align: center;
+				padding: 2rem;
+			}
+
+			.loading.active {
+				display: block;
+			}
+
+			.spinner {
+				border: 3px solid #f3f3f3;
+				border-top: 3px solid #667eea;
+				border-radius: 50%;
+				width: 40px;
+				height: 40px;
+				animation: spin 1s linear infinite;
+				margin: 0 auto 1rem;
+			}
+
+			@keyframes spin {
+				0% {
+					transform: rotate(0deg);
+				}
+				100% {
+					transform: rotate(360deg);
+				}
+			}
+
+			/* Alert Messages */
+			.alert {
+				padding: 1rem;
+				border-radius: 10px;
+				margin-bottom: 1rem;
+				display: none;
+			}
+
+			.alert.show {
+				display: block;
+			}
+
+			.alert-success {
+				background: #d4edda;
+				color: #155724;
+				border: 1px solid #c3e6cb;
+			}
+
+			.alert-error {
+				background: #f8d7da;
+				color: #721c24;
+				border: 1px solid #f5c6cb;
+			}
+
+			/* Responsive */
+			@media (max-width: 768px) {
+				.container {
+					padding: 1rem;
+				}
+
+				.track-item {
+					flex-wrap: wrap;
+				}
+
+				.section-header {
+					flex-direction: column;
+					align-items: stretch;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<!-- Navbar -->
+		<nav class="navbar">
+			<div class="logo">🎵 Tunescape</div>
+			<div class="nav-buttons">
+				<button
+					class="btn-outline"
+					style="width: auto; padding: 0.5rem 1rem"
+					onclick="logout()"
+					id="logout-btn"
+					style="display: none"
+				>
+					Logout
+				</button>
+			</div>
+		</nav>
+
+		<div class="container">
+			<!-- Auth Container -->
+			<div id="auth-container" class="auth-container">
+				<div class="auth-card">
+					<h2 id="auth-title">Welcome to Tunescape</h2>
+
+					<div id="alert" class="alert"></div>
+
+					<!-- Login Form -->
+					<div id="login-form">
+						<div class="form-group">
+							<label>Email</label>
+							<input
+								type="email"
+								id="login-email"
+								placeholder="you@example.com"
+							/>
+						</div>
+						<div class="form-group">
+							<label>Password</label>
+							<input
+								type="password"
+								id="login-password"
+								placeholder="Enter your password"
+							/>
+						</div>
+						<button class="btn btn-primary" onclick="login()">Login</button>
+						<div class="switch-auth">
+							Don't have an account? <a onclick="showSignup()">Sign up</a>
+						</div>
+					</div>
+
+					<!-- Signup Form -->
+					<div id="signup-form" style="display: none">
+						<div class="form-group">
+							<label>Email</label>
+							<input
+								type="email"
+								id="signup-email"
+								placeholder="you@example.com"
+							/>
+						</div>
+						<div class="form-group">
+							<label>Display Name</label>
+							<input
+								type="text"
+								id="signup-name"
+								placeholder="How should we call you?"
+							/>
+						</div>
+						<div class="form-group">
+							<label>Password</label>
+							<input
+								type="password"
+								id="signup-password"
+								placeholder="At least 8 characters"
+							/>
+						</div>
+						<button class="btn btn-primary" onclick="signup()">
+							Create Account
+						</button>
+						<div class="switch-auth">
+							Already have an account? <a onclick="showLogin()">Login</a>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Dashboard Container -->
+			<div id="dashboard-container" class="dashboard-container">
+				<!-- Welcome Header -->
+				<div class="welcome-header">
+					<div class="user-info">
+						<div class="user-avatar" id="user-avatar">👤</div>
+						<div>
+							<h2 id="user-name">Loading...</h2>
+							<p id="user-email" style="color: #666; margin-top: 0.25rem"></p>
+							<div
+								id="spotify-status"
+								class="spotify-status spotify-disconnected"
+							>
+								🔴 Spotify not connected
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Stats Grid -->
+				<div class="stats-grid">
+					<div class="stat-card">
+						<div class="stat-number" id="total-tracks">0</div>
+						<div class="stat-label">Top Tracks Analyzed</div>
+					</div>
+					<div class="stat-card">
+						<div class="stat-number" id="avg-popularity">0</div>
+						<div class="stat-label">Average Popularity</div>
+					</div>
+					<div class="stat-card">
+						<div class="stat-number" id="last-snapshot">-</div>
+						<div class="stat-label">Last Updated</div>
+					</div>
+				</div>
+
+				<!-- Spotify Connection Card -->
+				<div class="tracks-section" id="spotify-connect-card">
+					<div class="section-header">
+						<h3>🎧 Connect Your Spotify</h3>
+					</div>
+					<p style="margin-bottom: 1rem; color: #666">
+						Connect your Spotify account to see your top 50 tracks and get
+						personalized music insights!
+					</p>
+					<button
+						class="btn btn-spotify"
+						onclick="connectSpotify()"
+						style="width: auto; padding: 0.75rem 2rem"
+					>
+						🎵 Connect Spotify Account
+					</button>
+				</div>
+
+				<!-- Loading Spinner -->
+				<div id="loading" class="loading">
+					<div class="spinner"></div>
+					<p>Fetching your top tracks from Spotify...</p>
+				</div>
+
+				<!-- Top Tracks Section -->
+				<div id="tracks-section" class="tracks-section" style="display: none">
+					<div class="section-header">
+						<h3>🎵 Your Top 50 Tracks</h3>
+						<button
+							class="btn-outline"
+							onclick="refreshTopTracks()"
+							style="width: auto; padding: 0.5rem 1rem"
+						>
+							🔄 Refresh
+						</button>
+					</div>
+					<div id="tracks-list" class="tracks-list">
+						<!-- Tracks will be loaded here -->
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			// Global state
+			let currentAccessToken = null
+			let currentUser = null
+
+			// Show alert message
+			function showAlert(message, type = 'error') {
+				const alert = document.getElementById('alert')
+				alert.className = `alert alert-${type} show`
+				alert.textContent = message
+				setTimeout(() => {
+					alert.classList.remove('show')
+				}, 5000)
+			}
+
+			// Show/hide loading
+			function setLoading(show) {
+				const loading = document.getElementById('loading')
+				if (show) {
+					loading.classList.add('active')
+				} else {
+					loading.classList.remove('active')
+				}
+			}
+
+			// API Request helper
+			async function apiRequest(
+				url,
+				method,
+				body = null,
+				requiresAuth = false,
+			) {
+				const headers = {
+					'Content-Type': 'application/json',
+				}
+
+				if (requiresAuth && currentAccessToken) {
+					headers['Authorization'] = `Bearer ${currentAccessToken}`
+				}
+
+				const options = {
+					method: method,
+					credentials: 'same-origin',
+					headers: headers,
+				}
+
+				if (body) {
+					options.body = JSON.stringify(body)
+				}
+
+				const response = await fetch(url, options)
+				let data
+				const contentType = response.headers.get('content-type')
+				if (contentType && contentType.includes('application/json')) {
+					data = await response.json()
+				} else {
+					data = await response.text()
+				}
+
+				return { ok: response.ok, status: response.status, data }
+			}
+
+			// Authentication functions
+			async function login() {
+				const email = document.getElementById('login-email').value
+				const password = document.getElementById('login-password').value
+
+				if (!email || !password) {
+					showAlert('Please fill in all fields')
+					return
+				}
+
+				setLoading(true)
+				const response = await apiRequest('/auth/login', 'POST', {
+					email,
+					password,
+				})
+				setLoading(false)
+
+				if (response.ok && response.data.access_token) {
+					currentAccessToken = response.data.access_token
+					await loadUserData()
+					showDashboard()
+					showAlert('Login successful!', 'success')
+				} else {
+					showAlert(
+						response.data.error ||
+							'Login failed. Please check your credentials.',
+					)
+				}
+			}
+
+			async function signup() {
+				const email = document.getElementById('signup-email').value
+				const password = document.getElementById('signup-password').value
+				const displayName = document.getElementById('signup-name').value
+
+				if (!email || !password || !displayName) {
+					showAlert('Please fill in all fields')
+					return
+				}
+
+				if (password.length < 8) {
+					showAlert('Password must be at least 8 characters')
+					return
+				}
+
+				setLoading(true)
+				const response = await apiRequest('/auth/signup', 'POST', {
+					email,
+					password,
+					display_name: displayName,
+				})
+				setLoading(false)
+
+				if (response.ok && response.data.access_token) {
+					currentAccessToken = response.data.access_token
+					await loadUserData()
+					showDashboard()
+					showAlert('Account created successfully!', 'success')
+				} else {
+					showAlert(
+						response.data.error ||
+							'Signup failed. Email might already be in use.',
+					)
+				}
+			}
+
+			async function logout() {
+				await apiRequest('/auth/logout', 'POST')
+				currentAccessToken = null
+				currentUser = null
+				showAuth()
+				showAlert('Logged out successfully', 'success')
+			}
+
+			// Load user data and check Spotify connection
+			async function loadUserData() {
+				// Try to get user info via a protected endpoint
+				// Since there's no /me endpoint, we'll use the refresh endpoint to validate
+				const response = await apiRequest('/auth/refresh', 'POST', null, true)
+
+				if (response.ok && response.data.access_token) {
+					currentAccessToken = response.data.access_token
+
+					// Try to get user info from the snapshot endpoint (will tell us if Spotify is connected)
+					const testResponse = await apiRequest(
+						'/me/snapshots',
+						'POST',
+						null,
+						true,
+					)
+
+					// Update UI based on Spotify connection status
+					const spotifyStatus = document.getElementById('spotify-status')
+					const spotifyConnectCard = document.getElementById(
+						'spotify-connect-card',
+					)
+
+					if (testResponse.status === 422) {
+						// Spotify not connected
+						spotifyStatus.className = 'spotify-status spotify-disconnected'
+						spotifyStatus.innerHTML = '🔴 Spotify not connected'
+						spotifyConnectCard.style.display = 'block'
+						document.getElementById('tracks-section').style.display = 'none'
+					} else if (testResponse.ok) {
+						// Spotify is connected and we got tracks
+						spotifyStatus.className = 'spotify-status spotify-connected'
+						spotifyStatus.innerHTML = '🟢 Spotify connected'
+						spotifyConnectCard.style.display = 'none'
+						await loadTopTracks()
+					}
+
+					// Set user display info (from signup)
+					document.getElementById('user-name').textContent = 'Music Lover'
+					document.getElementById('user-email').textContent =
+						'Connected to Tunescape'
+				}
+			}
+
+			// Load top tracks
+			async function loadTopTracks() {
+				setLoading(true)
+				const response = await apiRequest('/me/snapshots', 'POST', null, true)
+				setLoading(false)
+
+				if (response.ok && response.data.tracks) {
+					displayTracks(response.data)
+				} else if (response.status === 422) {
+					showAlert('Please connect your Spotify account first', 'error')
+				} else if (response.status === 401) {
+					showAlert('Session expired. Please login again.', 'error')
+					logout()
+				} else {
+					showAlert('Failed to load tracks. Please try again.', 'error')
+				}
+			}
+
+			// Display tracks in UI
+			function displayTracks(snapshot) {
+				const tracks = snapshot.tracks
+				const totalTracks = tracks.length
+				const avgPopularity =
+					tracks.reduce((sum, t) => sum + t.popularity, 0) / totalTracks
+				const lastSnapshot = new Date(snapshot.created_at).toLocaleDateString()
+
+				// Update stats
+				document.getElementById('total-tracks').textContent = totalTracks
+				document.getElementById('avg-popularity').textContent =
+					avgPopularity.toFixed(1)
+				document.getElementById('last-snapshot').textContent = lastSnapshot
+
+				// Display tracks
+				const tracksList = document.getElementById('tracks-list')
+				tracksList.innerHTML = ''
+
+				tracks.forEach((track, index) => {
+					const trackItem = document.createElement('div')
+					trackItem.className = 'track-item'
+					trackItem.innerHTML = `
+          <div class="track-rank">#${index + 1}</div>
+          <div class="track-info">
+            <div class="track-name">${escapeHtml(track.name)}</div>
+            <div class="track-popularity">
+              Popularity: ${track.popularity}/100
+              <div class="popularity-bar">
+                <div class="popularity-fill" style="width: ${track.popularity}%"></div>
+              </div>
+            </div>
+          </div>
+        `
+					tracksList.appendChild(trackItem)
+				})
+
+				// Show tracks section
+				document.getElementById('tracks-section').style.display = 'block'
+			}
+
+			async function refreshTopTracks() {
+				await loadTopTracks()
+				showAlert('Top tracks refreshed!', 'success')
+			}
+
+			function connectSpotify() {
+				window.location.href = '/auth/spotify/login'
+			}
+
+			// UI Navigation
+			function showDashboard() {
+				document.getElementById('auth-container').style.display = 'none'
+				document.getElementById('dashboard-container').classList.add('active')
+				document.getElementById('logout-btn').style.display = 'block'
+			}
+
+			function showAuth() {
+				document.getElementById('auth-container').style.display = 'flex'
+				document
+					.getElementById('dashboard-container')
+					.classList.remove('active')
+				document.getElementById('logout-btn').style.display = 'none'
+				showLogin()
+			}
+
+			function showLogin() {
+				document.getElementById('login-form').style.display = 'block'
+				document.getElementById('signup-form').style.display = 'none'
+				document.getElementById('auth-title').textContent = 'Welcome Back'
+			}
+
+			function showSignup() {
+				document.getElementById('login-form').style.display = 'none'
+				document.getElementById('signup-form').style.display = 'block'
+				document.getElementById('auth-title').textContent = 'Create Account'
+			}
+
+			// Helper function to escape HTML
+			function escapeHtml(text) {
+				const div = document.createElement('div')
+				div.textContent = text
+				return div.innerHTML
+			}
+
+			// Check OAuth callback and restore session
+			async function checkOAuthCallback() {
+				const params = new URLSearchParams(window.location.search)
+				const connected = params.get('connected')
+				const error = params.get('error')
+
+				if (connected === '1') {
+					showAlert(
+						'✅ Spotify connected successfully! Click Refresh to see your top tracks.',
+						'success',
+					)
+					window.history.replaceState(
+						{},
+						document.title,
+						window.location.pathname,
+					)
+					await loadUserData()
+				} else if (error) {
+					const errorMessages = {
+						not_logged_in: 'Please login before connecting Spotify.',
+						session_expired: 'Your session expired. Please login again.',
+						invalid_state: 'Security check failed. Please try again.',
+						spotify_already_linked:
+							'This Spotify account is already linked to another user.',
+						db_error: 'Server error. Please try again later.',
+					}
+					showAlert(
+						errorMessages[error] || `Connection failed: ${error}`,
+						'error',
+					)
+					window.history.replaceState(
+						{},
+						document.title,
+						window.location.pathname,
+					)
+				}
+			}
+
+			// Initialize app
+			async function init() {
+				await checkOAuthCallback()
+
+				// Try to restore session
+				const response = await apiRequest('/auth/refresh', 'POST')
+				if (response.ok && response.data.access_token) {
+					currentAccessToken = response.data.access_token
+					await loadUserData()
+					showDashboard()
+				} else {
+					showAuth()
+				}
+			}
+
+			// Start the app
+			init()
+		</script>
+	</body>
 </html>

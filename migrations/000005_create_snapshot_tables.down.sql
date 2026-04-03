@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS snapshot_tracks;
+DROP TABLE IF EXISTS snapshots;
+DROP TABLE IF EXISTS tracks;
