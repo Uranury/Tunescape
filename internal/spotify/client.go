@@ -16,7 +16,7 @@ type Client struct {
 	oauth2Cfg  *oauth2.Config
 }
 
-type SpotifyProfile struct {
+type spotifyProfile struct {
 	ID          string `json:"id"`
 	Email       string `json:"email"`
 	DisplayName string `json:"display_name"`
@@ -27,14 +27,14 @@ type SpotifyProfile struct {
 	} `json:"images"`
 }
 
-type TopTrackItem struct {
+type topTrackItem struct {
 	ID         string `json:"id"`
 	Name       string `json:"name"`
 	Popularity int    `json:"popularity"`
 }
 
 type topTracksResponse struct {
-	Items []TopTrackItem `json:"items"`
+	Items []topTrackItem `json:"items"`
 }
 
 func NewClient(cfg config.Spotify, httpClient *http.Client) *Client {
@@ -56,7 +56,7 @@ func NewClient(cfg config.Spotify, httpClient *http.Client) *Client {
 	}
 }
 
-func (c *Client) getMe(ctx context.Context, accessToken string) (*SpotifyProfile, error) {
+func (c *Client) getMe(ctx context.Context, accessToken string) (*spotifyProfile, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.spotify.com/v1/me", nil)
 	if err != nil {
 		return nil, err
@@ -73,7 +73,7 @@ func (c *Client) getMe(ctx context.Context, accessToken string) (*SpotifyProfile
 		return nil, fmt.Errorf("spotify /me returned %d", resp.StatusCode)
 	}
 
-	var profile SpotifyProfile
+	var profile spotifyProfile
 	if err := json.NewDecoder(resp.Body).Decode(&profile); err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (c *Client) getMe(ctx context.Context, accessToken string) (*SpotifyProfile
 	return &profile, nil
 }
 
-func (c *Client) GetTopTracks(ctx context.Context, accessToken string, limit int) ([]TopTrackItem, error) {
+func (c *Client) GetTopTracks(ctx context.Context, accessToken string, limit int) ([]topTrackItem, error) {
 	url := fmt.Sprintf("https://api.spotify.com/v1/me/top/tracks?limit=%d&time_range=medium_term", limit)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -108,4 +108,9 @@ func (c *Client) GetTopTracks(ctx context.Context, accessToken string, limit int
 	}
 
 	return result.Items, nil
+}
+
+func (c *Client) RefreshToken(ctx context.Context, refreshToken string) (*oauth2.Token, error) {
+	ts := c.oauth2Cfg.TokenSource(ctx, &oauth2.Token{RefreshToken: refreshToken})
+	return ts.Token()
 }

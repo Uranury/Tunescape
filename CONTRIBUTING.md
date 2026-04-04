@@ -10,8 +10,9 @@ We follow GitFlow. The two permanent branches are `main` and `dev`.
 Branch off `dev` for any new work:
 
 ```
-feat/spotify-oauth
+feature/spotify-oauth
 fix/token-expiry
+refactor/service-x
 chore/update-dependencies
 docs/update-readme
 ```
@@ -22,14 +23,14 @@ Never push directly to `main` or `dev`. All changes go through a Merge Request.
 
 We follow [Conventional Commits](https://www.conventionalcommits.org/). Every commit message should be prefixed with a type:
 
-| Prefix | When to use |
-|---|---|
-| `feat:` | Adding a new feature |
-| `fix:` | Fixing a bug |
-| `chore:` | Maintenance, config, CI/CD, dependencies |
-| `docs:` | Documentation only |
-| `refactor:` | Code change that isn't a fix or feature |
-| `test:` | Adding or updating tests |
+| Prefix          | When to use |
+|-----------------|---|
+| `feature/feat:` | Adding a new feature |
+| `fix:`          | Fixing a bug |
+| `chore:`        | Maintenance, config, CI/CD, dependencies |
+| `docs:`         | Documentation only |
+| `refactor:`     | Code change that isn't a fix or feature |
+| `test:`         | Adding or updating tests |
 
 Examples:
 
