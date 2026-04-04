@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS snapshots (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_snapshots_user_id ON snapshots(user_id);
+CREATE INDEX IF NOT EXISTS idx_snapshots_user_id ON snapshots(user_id);
 
 CREATE TABLE IF NOT EXISTS snapshot_tracks (
   snapshot_id UUID NOT NULL REFERENCES snapshots(id) ON DELETE CASCADE,

@@ -60,20 +60,6 @@ func (m *mockTokenService) Validate(tokenString string) (*Claims, error) {
 	return m.validateFn(tokenString)
 }
 
-type sqlxTxProvider struct{ db *sqlx.DB }
-
-func (p sqlxTxProvider) RunInTx(ctx context.Context, fn func(database.Executor) error) error {
-	tx, err := p.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	if err := fn(tx); err != nil {
-		_ = tx.Rollback()
-		return err
-	}
-	return tx.Commit()
-}
-
 type tokenHashArgMatcher struct{ oldHash string }
 
 func (m tokenHashArgMatcher) Match(v driver.Value) bool {
@@ -335,7 +321,7 @@ func TestRefreshTokenService_Refresh_Success(t *testing.T) {
 	}
 
 	db := sqlx.NewDb(rawDB, "sqlmock")
-	txProvider := sqlxTxProvider{db: db}
+	txProvider := database.NewTxProvider(db)
 
 	logger := testLogger()
 

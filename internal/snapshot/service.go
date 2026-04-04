@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"gitlab.com/Uranury/tunescape/internal/spotify"
+	"gitlab.com/Uranury/tunescape/internal/track"
 	"gitlab.com/Uranury/tunescape/pkg/apperrors"
 	"gitlab.com/Uranury/tunescape/pkg/database"
 )
@@ -55,34 +56,35 @@ func (s *service) CreateSnapshot(ctx context.Context, userID uuid.UUID) (*Snapsh
 	var result *Snapshot
 
 	err = s.txProvider.RunInTx(ctx, func(exec database.Executor) error {
-		repo := NewRepository(exec)
+		snapRepo := NewRepository(exec)
+		trackRepo := track.NewRepository(exec)
 
 		snap := &Snapshot{UserID: userID}
-		if err := repo.CreateSnapshot(ctx, snap); err != nil {
+		if err := snapRepo.CreateSnapshot(ctx, snap); err != nil {
 			return fmt.Errorf("create snapshot: %w", err)
 		}
 
-		tracks := make([]Track, 0, len(topTracks))
+		tracks := make([]track.Track, 0, len(topTracks))
 		for i, item := range topTracks {
-			track := &Track{
+			t := &track.Track{
 				SpotifyID:  item.ID,
 				Name:       item.Name,
 				Popularity: item.Popularity,
 			}
 
-			if err := repo.UpsertTrack(ctx, track); err != nil {
+			if err := trackRepo.Upsert(ctx, t); err != nil {
 				return fmt.Errorf("upsert track %q: %w", item.ID, err)
 			}
 
-			if err := repo.CreateSnapshotTrack(ctx, &SnapshotTrack{
+			if err := snapRepo.CreateSnapshotTrack(ctx, &SnapshotTrack{
 				SnapshotID: snap.ID,
-				TrackID:    track.ID,
+				TrackID:    t.ID,
 				Position:   i + 1,
 			}); err != nil {
 				return fmt.Errorf("link track %q to snapshot: %w", item.ID, err)
 			}
 
-			tracks = append(tracks, *track)
+			tracks = append(tracks, *t)
 		}
 
 		snap.Tracks = tracks

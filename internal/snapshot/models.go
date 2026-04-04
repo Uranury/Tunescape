@@ -4,20 +4,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gitlab.com/Uranury/tunescape/internal/track"
 )
 
-type Track struct {
-	ID         uuid.UUID `json:"id"         db:"id"`
-	SpotifyID  string    `json:"spotify_id" db:"spotify_id"`
-	Name       string    `json:"name"       db:"name"`
-	Popularity int       `json:"popularity" db:"popularity"`
-}
-
 type Snapshot struct {
-	ID        uuid.UUID `json:"id"         db:"id"`
-	UserID    uuid.UUID `json:"user_id"    db:"user_id"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	Tracks    []Track   `json:"tracks"`
+	ID        uuid.UUID     `json:"id"         db:"id"`
+	UserID    uuid.UUID     `json:"user_id"    db:"user_id"`
+	CreatedAt time.Time     `json:"created_at" db:"created_at"`
+	Tracks    []track.Track `json:"tracks"`
 }
 
 type SnapshotTrack struct {
