@@ -9,10 +9,12 @@ import (
 	"time"
 
 	_ "gitlab.com/Uranury/tunescape/docs"
+	"gitlab.com/Uranury/tunescape/internal/analytics"
 	"gitlab.com/Uranury/tunescape/internal/app"
 	"gitlab.com/Uranury/tunescape/internal/auth"
 	"gitlab.com/Uranury/tunescape/internal/infra"
 	"gitlab.com/Uranury/tunescape/internal/middleware"
+	"gitlab.com/Uranury/tunescape/internal/reccobeats"
 	"gitlab.com/Uranury/tunescape/internal/snapshot"
 	"gitlab.com/Uranury/tunescape/internal/spotify"
 	"gitlab.com/Uranury/tunescape/internal/user"
@@ -55,9 +57,14 @@ func main() {
 	snapshotSvc := snapshot.NewService(snapshotRepo, spotifySvc, txProvider)
 	snapshotHandler := snapshot.NewHandler(snapshotSvc)
 
+	reccobeatsClient := reccobeats.NewClient(deps.Config.Reccobeats, deps.HTTPClient)
+	analyticsRepo := analytics.NewRepository(deps.DBConn)
+	analyticsSvc := analytics.NewService(analyticsRepo, reccobeatsClient, txProvider)
+	analyticsHandler := analytics.NewHandler(analyticsSvc)
+
 	authMiddleware := middleware.NewAuth(tokenSvc)
 
-	server := app.NewServer(deps, authHandler, spotifyHandler, snapshotHandler, authMiddleware)
+	server := app.NewServer(deps, authHandler, spotifyHandler, snapshotHandler, analyticsHandler, authMiddleware)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

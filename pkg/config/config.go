@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
@@ -9,12 +10,17 @@ type Config struct {
 	Database       DB
 	Redis          Redis
 	Spotify        Spotify
+	Reccobeats     Reccobeats
 	Env            string   `yaml:"env" env:"ENV" envDefault:"development"`
 	MigrationsPath string   `yaml:"migrations_path" env:"MIGRATIONS_PATH" env-required:"true"`
 	ListenAddr     string   `yaml:"listen_addr" env:"LISTEN_ADDR" env-default:":8080"`
 	JWTKey         string   `yaml:"jwt_key" env:"JWT_KEY" env-required:"true"`
 	AllowedOrigins []string `yaml:"allowed_origins" env:"ALLOWED_ORIGINS" env-default:"http://localhost:5173"`
 	FrontendURL    string   `yaml:"frontend_url" env:"FRONTEND_URL" env-default:"http://localhost:5173"`
+}
+
+type Reccobeats struct {
+	BaseURL string `yaml:"base_url" env:"RECCOBEATS_BASE_URL" env-default:"https://api.reccobeats.com"`
 }
 
 type Spotify struct {

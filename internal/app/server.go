@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"gitlab.com/Uranury/tunescape/internal/analytics"
 	"gitlab.com/Uranury/tunescape/internal/auth"
 	"gitlab.com/Uranury/tunescape/internal/infra"
 	"gitlab.com/Uranury/tunescape/internal/middleware"
@@ -21,13 +22,14 @@ import (
 )
 
 type Server struct {
-	router          *gin.Engine
-	logger          *slog.Logger
-	httpServer      *http.Server
-	authHandler     *auth.Handler
-	spotifyHandler  *spotify.Handler
-	snapshotHandler *snapshot.Handler
-	authMiddleware  *middleware.Auth
+	router           *gin.Engine
+	logger           *slog.Logger
+	httpServer       *http.Server
+	authHandler      *auth.Handler
+	spotifyHandler   *spotify.Handler
+	snapshotHandler  *snapshot.Handler
+	analyticsHandler *analytics.Handler
+	authMiddleware   *middleware.Auth
 }
 
 func NewServer(
@@ -35,6 +37,7 @@ func NewServer(
 	authHandler *auth.Handler,
 	spotifyHandler *spotify.Handler,
 	snapshotHandler *snapshot.Handler,
+	analyticsHandler *analytics.Handler,
 	authMiddleware *middleware.Auth,
 ) *Server {
 	router := gin.New()
@@ -51,12 +54,13 @@ func NewServer(
 	)
 
 	server := &Server{
-		router:          router,
-		logger:          deps.Logger,
-		authHandler:     authHandler,
-		spotifyHandler:  spotifyHandler,
-		snapshotHandler: snapshotHandler,
-		authMiddleware:  authMiddleware,
+		router:           router,
+		logger:           deps.Logger,
+		authHandler:      authHandler,
+		spotifyHandler:   spotifyHandler,
+		snapshotHandler:  snapshotHandler,
+		analyticsHandler: analyticsHandler,
+		authMiddleware:   authMiddleware,
 		httpServer: &http.Server{
 			Addr:         deps.Config.ListenAddr,
 			Handler:      router,
@@ -111,5 +115,10 @@ func (s *Server) registerRoutes() {
 	meGroup := s.router.Group("/me", s.authMiddleware.JWTAuth())
 	{
 		meGroup.POST("/snapshots", s.snapshotHandler.CreateSnapshot)
+	}
+
+	analyticsGroup := s.router.Group("/analytics", s.authMiddleware.JWTAuth())
+	{
+		analyticsGroup.GET("/top-tracks", s.analyticsHandler.GetMusicTaste)
 	}
 }
