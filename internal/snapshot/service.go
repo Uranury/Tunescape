@@ -2,13 +2,11 @@ package snapshot
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
 	"gitlab.com/Uranury/tunescape/internal/spotify"
 	"gitlab.com/Uranury/tunescape/internal/track"
-	"gitlab.com/Uranury/tunescape/pkg/apperrors"
 	"gitlab.com/Uranury/tunescape/pkg/database"
 )
 
@@ -19,36 +17,25 @@ type Service interface {
 }
 
 type service struct {
-	repo          Repository
-	spotifyRepo   spotify.Repository
-	spotifyClient *spotify.Client
-	txProvider    database.TxProvider
+	repo       Repository
+	spotifySvc spotify.Service
+	txProvider database.TxProvider
 }
 
 func NewService(
 	repo Repository,
-	spotifyRepo spotify.Repository,
-	spotifyClient *spotify.Client,
+	spotifySvc spotify.Service,
 	txProvider database.TxProvider,
 ) Service {
 	return &service{
-		repo:          repo,
-		spotifyRepo:   spotifyRepo,
-		spotifyClient: spotifyClient,
-		txProvider:    txProvider,
+		repo:       repo,
+		spotifySvc: spotifySvc,
+		txProvider: txProvider,
 	}
 }
 
 func (s *service) CreateSnapshot(ctx context.Context, userID uuid.UUID) (*Snapshot, error) {
-	token, err := s.spotifyRepo.GetByUserID(ctx, userID)
-	if err != nil {
-		if errors.Is(err, apperrors.ErrSpotifyNotConnected) {
-			return nil, apperrors.ErrSpotifyNotConnected
-		}
-		return nil, fmt.Errorf("get spotify token: %w", err)
-	}
-
-	topTracks, err := s.spotifyClient.GetTopTracks(ctx, token.AccessToken, topTracksLimit)
+	topTracks, err := s.spotifySvc.GetTopTracks(ctx, userID, topTracksLimit)
 	if err != nil {
 		return nil, fmt.Errorf("fetch top tracks from spotify: %w", err)
 	}
@@ -64,30 +51,21 @@ func (s *service) CreateSnapshot(ctx context.Context, userID uuid.UUID) (*Snapsh
 			return fmt.Errorf("create snapshot: %w", err)
 		}
 
-		tracks := make([]track.Track, 0, len(topTracks))
-		for i, item := range topTracks {
-			t := &track.Track{
-				SpotifyID:  item.ID,
-				Name:       item.Name,
-				Popularity: item.Popularity,
-			}
-
-			if err := trackRepo.Upsert(ctx, t); err != nil {
-				return fmt.Errorf("upsert track %q: %w", item.ID, err)
+		for i := range topTracks {
+			if err := trackRepo.Upsert(ctx, &topTracks[i]); err != nil {
+				return fmt.Errorf("upsert track %q: %w", topTracks[i].SpotifyID, err)
 			}
 
 			if err := snapRepo.CreateSnapshotTrack(ctx, &SnapshotTrack{
 				SnapshotID: snap.ID,
-				TrackID:    t.ID,
+				TrackID:    topTracks[i].ID,
 				Position:   i + 1,
 			}); err != nil {
-				return fmt.Errorf("link track %q to snapshot: %w", item.ID, err)
+				return fmt.Errorf("link track %q to snapshot: %w", topTracks[i].SpotifyID, err)
 			}
-
-			tracks = append(tracks, *t)
 		}
 
-		snap.Tracks = tracks
+		snap.Tracks = topTracks
 		result = snap
 		return nil
 	})

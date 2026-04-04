@@ -52,7 +52,7 @@ func main() {
 	)
 
 	snapshotRepo := snapshot.NewRepository(deps.DBConn)
-	snapshotSvc := snapshot.NewService(snapshotRepo, spotifyRepo, spotifyClient, txProvider)
+	snapshotSvc := snapshot.NewService(snapshotRepo, spotifySvc, txProvider)
 	snapshotHandler := snapshot.NewHandler(snapshotSvc)
 
 	authMiddleware := middleware.NewAuth(tokenSvc)

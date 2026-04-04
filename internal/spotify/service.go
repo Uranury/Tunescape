@@ -6,12 +6,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gitlab.com/Uranury/tunescape/internal/track"
 	"gitlab.com/Uranury/tunescape/internal/user"
 )
 
 type Service interface {
 	AuthURL(state string) string
 	ConnectAccount(ctx context.Context, userID uuid.UUID, code string) error
+	GetValidToken(ctx context.Context, userID uuid.UUID) (string, error)
+	GetTopTracks(ctx context.Context, userID uuid.UUID, limit int) ([]track.Track, error)
 	UpsertTokens(ctx context.Context, userID uuid.UUID, accessToken, refreshToken string, expiresAt time.Time) error
 }
 
@@ -59,6 +62,53 @@ func (s *service) ConnectAccount(ctx context.Context, userID uuid.UUID, code str
 	return s.repo.UpsertTokens(ctx, userID, token.AccessToken, token.RefreshToken, token.Expiry)
 }
 
+func (s *service) GetTopTracks(ctx context.Context, userID uuid.UUID, limit int) ([]track.Track, error) {
+	accessToken, err := s.GetValidToken(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	items, err := s.client.GetTopTracks(ctx, accessToken, limit)
+	if err != nil {
+		return nil, err
+	}
+	tracks := make([]track.Track, len(items))
+	for i, item := range items {
+		tracks[i] = track.Track{
+			SpotifyID:  item.ID,
+			Name:       item.Name,
+			Popularity: item.Popularity,
+		}
+	}
+	return tracks, nil
+}
+
 func (s *service) UpsertTokens(ctx context.Context, userID uuid.UUID, accessToken, refreshToken string, expiresAt time.Time) error {
 	return s.repo.UpsertTokens(ctx, userID, accessToken, refreshToken, expiresAt)
+}
+
+func (s *service) GetValidToken(ctx context.Context, userID uuid.UUID) (string, error) {
+	token, err := s.repo.GetByUserID(ctx, userID)
+	if err != nil {
+		return "", err
+	}
+
+	if time.Now().Before(token.ExpiresAt.Add(-30 * time.Second)) {
+		return token.AccessToken, nil
+	}
+
+	refreshed, err := s.client.RefreshToken(ctx, token.RefreshToken)
+	if err != nil {
+		return "", fmt.Errorf("refresh spotify token: %w", err)
+	}
+
+	newRefreshToken := refreshed.RefreshToken
+	if newRefreshToken == "" {
+		newRefreshToken = token.RefreshToken
+	}
+
+	if err := s.repo.UpsertTokens(ctx, userID, refreshed.AccessToken, newRefreshToken, refreshed.Expiry); err != nil {
+		return "", fmt.Errorf("persist refreshed token: %w", err)
+	}
+
+	return refreshed.AccessToken, nil
 }
