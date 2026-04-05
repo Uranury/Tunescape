@@ -15,6 +15,44 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/analytics/me/top-tracks": {
+            "get": {
+                "description": "Reads the authenticated user's latest snapshot, fetches audio features",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "Get music taste based on top tracks",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/analytics.MusicTasteResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "No snapshot found for user",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Validates user credentials, creates access token and refresh token cookie.",
@@ -233,9 +271,93 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/me/snapshots": {
+            "post": {
+                "description": "Fetches the authenticated user's top 50 tracks from Spotify,",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "snapshots"
+                ],
+                "summary": "Create top-tracks snapshot",
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/snapshot.Snapshot"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    },
+                    "422": {
+                        "description": "Spotify account not connected",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "analytics.AudioFeatureAverages": {
+            "type": "object",
+            "properties": {
+                "acousticness": {
+                    "type": "number"
+                },
+                "danceability": {
+                    "type": "number"
+                },
+                "energy": {
+                    "type": "number"
+                },
+                "instrumentalness": {
+                    "type": "number"
+                },
+                "liveness": {
+                    "type": "number"
+                },
+                "loudness": {
+                    "type": "number"
+                },
+                "speechiness": {
+                    "type": "number"
+                },
+                "tempo": {
+                    "type": "number"
+                },
+                "valence": {
+                    "type": "number"
+                }
+            }
+        },
+        "analytics.MusicTasteResponse": {
+            "type": "object",
+            "properties": {
+                "averages": {
+                    "$ref": "#/definitions/analytics.AudioFeatureAverages"
+                },
+                "snapshot_id": {
+                    "type": "string"
+                },
+                "tracks_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "apperrors.HTTPError": {
             "type": "object",
             "properties": {
@@ -289,6 +411,43 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "access_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "snapshot.Snapshot": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "tracks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/track.Track"
+                    }
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "track.Track": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "popularity": {
+                    "type": "integer"
+                },
+                "spotify_id": {
                     "type": "string"
                 }
             }

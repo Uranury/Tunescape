@@ -1,5 +1,35 @@
 basePath: /
 definitions:
+  analytics.AudioFeatureAverages:
+    properties:
+      acousticness:
+        type: number
+      danceability:
+        type: number
+      energy:
+        type: number
+      instrumentalness:
+        type: number
+      liveness:
+        type: number
+      loudness:
+        type: number
+      speechiness:
+        type: number
+      tempo:
+        type: number
+      valence:
+        type: number
+    type: object
+  analytics.MusicTasteResponse:
+    properties:
+      averages:
+        $ref: '#/definitions/analytics.AudioFeatureAverages'
+      snapshot_id:
+        type: string
+      tracks_count:
+        type: integer
+    type: object
   apperrors.HTTPError:
     properties:
       code:
@@ -39,12 +69,61 @@ definitions:
       access_token:
         type: string
     type: object
+  snapshot.Snapshot:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      tracks:
+        items:
+          $ref: '#/definitions/track.Track'
+        type: array
+      user_id:
+        type: string
+    type: object
+  track.Track:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      popularity:
+        type: integer
+      spotify_id:
+        type: string
+    type: object
 info:
   contact: {}
   description: Tunescape backend API.
   title: Tunescape API
   version: "1.0"
 paths:
+  /analytics/me/top-tracks:
+    get:
+      description: Reads the authenticated user's latest snapshot, fetches audio features
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/analytics.MusicTasteResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+        "404":
+          description: No snapshot found for user
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+      summary: Get music taste based on top tracks
+      tags:
+      - analytics
   /auth/login:
     post:
       consumes:
@@ -194,4 +273,29 @@ paths:
       summary: Spotify OAuth login
       tags:
       - spotify
+  /me/snapshots:
+    post:
+      description: Fetches the authenticated user's top 50 tracks from Spotify,
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/snapshot.Snapshot'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+        "422":
+          description: Spotify account not connected
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+      summary: Create top-tracks snapshot
+      tags:
+      - snapshots
 swagger: "2.0"

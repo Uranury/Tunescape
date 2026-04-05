@@ -411,3 +411,55 @@ func TestRefreshTokenService_Refresh_Success(t *testing.T) {
 	}
 
 }
+
+func TestRefreshTokenService_Refresh_RevokedToken(t *testing.T) {
+	t.Parallel()
+
+	rawDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherRegexp))
+	if err != nil {
+		t.Fatalf("sqlmock.New: %v", err)
+	}
+
+	db := sqlx.NewDb(rawDB, "sqlmock")
+	txProvider := database.NewTxProvider(db)
+
+	revokedToken := "already-revoked-token"
+	revokedTokenHash := hashToken(revokedToken)
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT \\* FROM refresh_tokens").
+		WithArgs(revokedTokenHash).
+		WillReturnError(sql.ErrNoRows)
+	mock.ExpectRollback()
+	mock.ExpectClose()
+
+	tokenSvc := &mockTokenService{
+		generateFn: func(userID uuid.UUID, role string) (string, error) {
+			t.Fatal("Generate must not be called for a revoked token")
+			return "", nil
+		},
+	}
+
+	svc := NewRefreshService(tokenSvc, nil, txProvider, testLogger())
+	accessToken, newRefreshToken, err := svc.Refresh(context.Background(), revokedToken)
+
+	if err == nil {
+		t.Fatal("expected an error for a revoked token, got nil")
+	}
+	if !strings.Contains(err.Error(), "refresh token not found") {
+		t.Fatalf("expected 'refresh token not found' in error, got: %v", err)
+	}
+	if accessToken != "" {
+		t.Fatalf("expected empty access token, got %q", accessToken)
+	}
+	if newRefreshToken != "" {
+		t.Fatalf("expected empty refresh token, got %q", newRefreshToken)
+	}
+
+	if err := rawDB.Close(); err != nil {
+		t.Fatalf("failed to close db: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sqlmock expectations: %v", err)
+	}
+}

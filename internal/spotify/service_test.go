@@ -307,3 +307,72 @@ func TestSpotifyService_ConnectAccount_TokenExchangeError(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestSpotifyService_ConnectAccount_GetMeError(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	userID := uuid.New()
+	authCode := "code123"
+
+	httpClient := &http.Client{
+		Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+			switch {
+			case req.URL.Host == "token.test" && req.URL.Path == "/token":
+				body := `{"access_token":"access-token","refresh_token":"refresh-token","expires_in":3600}`
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Header:     http.Header{"Content-Type": []string{"application/json"}},
+					Body:       io.NopCloser(strings.NewReader(body)),
+					Request:    req,
+				}, nil
+			case req.URL.Host == "api.spotify.com" && req.URL.Path == "/v1/me":
+				return &http.Response{
+					StatusCode: http.StatusUnauthorized,
+					Header:     http.Header{"Content-Type": []string{"application/json"}},
+					Body:       io.NopCloser(strings.NewReader(`{"error":{"status":401,"message":"Unauthorized"}}`)),
+					Request:    req,
+				}, nil
+			default:
+				return nil, fmt.Errorf("unexpected request: %s %s", req.URL.Host, req.URL.Path)
+			}
+		}),
+	}
+
+	c := &Client{
+		httpClient: httpClient,
+		oauth2Cfg: &oauth2.Config{
+			ClientID:     "cid",
+			ClientSecret: "sec",
+			RedirectURL:  "http://localhost/callback",
+			Endpoint: oauth2.Endpoint{
+				AuthURL:  "http://token.test/auth",
+				TokenURL: "http://token.test/token",
+			},
+		},
+	}
+
+	repo := &mockSpotifyRepo{
+		upsertFn: func(_ context.Context, _ uuid.UUID, _, _ string, _ time.Time) error {
+			t.Fatal("UpsertTokens must not be called when /v1/me fails")
+			return nil
+		},
+	}
+	userRepo := &mockUserRepo{
+		connectSpotifyFn: func(_ context.Context, _ uuid.UUID, _ *string, _, _, _ *string) error {
+			t.Fatal("ConnectSpotify must not be called when /v1/me fails")
+			return nil
+		},
+	}
+
+	svc := NewService(repo, userRepo, c)
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, httpClient)
+	err := svc.ConnectAccount(ctx, userID, authCode)
+
+	if err == nil {
+		t.Fatal("expected error when /v1/me fails, got nil")
+	}
+	if !strings.Contains(err.Error(), "fetch spotify profile") {
+		t.Fatalf("expected 'fetch spotify profile' in error, got: %v", err)
+	}
+}
