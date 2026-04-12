@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"gitlab.com/Uranury/tunescape/internal/snapshot"
@@ -15,7 +17,7 @@ import (
 type Repository interface {
 	GetLatestSnapshotByUserID(ctx context.Context, userID uuid.UUID) (*snapshot.Snapshot, error)
 	GetTracksBySnapshotID(ctx context.Context, snapshotID uuid.UUID) ([]track.Track, error)
-	UpsertAudioFeatures(ctx context.Context, f *TrackAudioFeatures) error
+	BulkUpsertAudioFeatures(ctx context.Context, features []TrackAudioFeatures) error
 	GetAveragesBySnapshotID(ctx context.Context, snapshotID uuid.UUID) (*AudioFeatureAverages, int, error)
 }
 
@@ -61,12 +63,40 @@ func (r *repository) GetTracksBySnapshotID(ctx context.Context, snapshotID uuid.
 	return tracks, nil
 }
 
-func (r *repository) UpsertAudioFeatures(ctx context.Context, f *TrackAudioFeatures) error {
-	query := `
+func (r *repository) BulkUpsertAudioFeatures(ctx context.Context, features []TrackAudioFeatures) error {
+	if len(features) == 0 {
+		return nil
+	}
+
+	const cols = 10
+	placeholders := make([]string, len(features))
+	args := make([]interface{}, 0, len(features)*cols)
+
+	for i, f := range features {
+		base := i * cols
+		placeholders[i] = fmt.Sprintf(
+			"($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)",
+			base+1, base+2, base+3, base+4, base+5,
+			base+6, base+7, base+8, base+9, base+10,
+		)
+		args = append(args,
+			f.TrackID,
+			f.Danceability,
+			f.Valence,
+			f.Energy,
+			f.Acousticness,
+			f.Instrumentalness,
+			f.Liveness,
+			f.Speechiness,
+			f.Tempo,
+			f.Loudness,
+		)
+	}
+
+	query := fmt.Sprintf(`
 		INSERT INTO track_audio_features
 			(track_id, danceability, valence, energy, acousticness, instrumentalness, liveness, speechiness, tempo, loudness)
-		VALUES
-			($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		VALUES %s
 		ON CONFLICT (track_id) DO UPDATE SET
 			danceability     = EXCLUDED.danceability,
 			valence          = EXCLUDED.valence,
@@ -77,19 +107,9 @@ func (r *repository) UpsertAudioFeatures(ctx context.Context, f *TrackAudioFeatu
 			speechiness      = EXCLUDED.speechiness,
 			tempo            = EXCLUDED.tempo,
 			loudness         = EXCLUDED.loudness
-	`
-	_, err := r.exec.ExecContext(ctx, query,
-		f.TrackID,
-		f.Danceability,
-		f.Valence,
-		f.Energy,
-		f.Acousticness,
-		f.Instrumentalness,
-		f.Liveness,
-		f.Speechiness,
-		f.Tempo,
-		f.Loudness,
-	)
+	`, strings.Join(placeholders, ", "))
+
+	_, err := r.exec.ExecContext(ctx, query, args...)
 	return err
 }
 
