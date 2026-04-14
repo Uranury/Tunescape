@@ -25,10 +25,10 @@ import (
 )
 
 type mockAnalyticsRepo struct {
-	getLatestSnapshotFn   func(ctx context.Context, userID uuid.UUID) (*snapshot.Snapshot, error)
-	getTracksBySnapshotFn func(ctx context.Context, snapshotID uuid.UUID) ([]track.Track, error)
-	upsertAudioFeaturesFn func(ctx context.Context, f *TrackAudioFeatures) error
-	getAveragesFn         func(ctx context.Context, snapshotID uuid.UUID) (*AudioFeatureAverages, int, error)
+	getLatestSnapshotFn       func(ctx context.Context, userID uuid.UUID) (*snapshot.Snapshot, error)
+	getTracksBySnapshotFn     func(ctx context.Context, snapshotID uuid.UUID) ([]track.Track, error)
+	bulkUpsertAudioFeaturesFn func(ctx context.Context, features []TrackAudioFeatures) error
+	getAveragesFn             func(ctx context.Context, snapshotID uuid.UUID) (*AudioFeatureAverages, int, error)
 }
 
 func (m *mockAnalyticsRepo) GetLatestSnapshotByUserID(ctx context.Context, userID uuid.UUID) (*snapshot.Snapshot, error) {
@@ -37,8 +37,8 @@ func (m *mockAnalyticsRepo) GetLatestSnapshotByUserID(ctx context.Context, userI
 func (m *mockAnalyticsRepo) GetTracksBySnapshotID(ctx context.Context, snapshotID uuid.UUID) ([]track.Track, error) {
 	return m.getTracksBySnapshotFn(ctx, snapshotID)
 }
-func (m *mockAnalyticsRepo) UpsertAudioFeatures(ctx context.Context, f *TrackAudioFeatures) error {
-	return m.upsertAudioFeaturesFn(ctx, f)
+func (m *mockAnalyticsRepo) BulkUpsertAudioFeatures(ctx context.Context, features []TrackAudioFeatures) error {
+	return m.bulkUpsertAudioFeaturesFn(ctx, features)
 }
 func (m *mockAnalyticsRepo) GetAveragesBySnapshotID(ctx context.Context, snapshotID uuid.UUID) (*AudioFeatureAverages, int, error) {
 	return m.getAveragesFn(ctx, snapshotID)
@@ -84,11 +84,12 @@ func makeAudioFeaturesResponse(tracks []track.Track) []reccobeats.AudioFeatures 
 	return features
 }
 
-func newReccobeatsClient(transport http.RoundTripper) *reccobeats.Client {
-	return reccobeats.NewClient(
+func newReccobeatsService(transport http.RoundTripper) reccobeats.Service {
+	client := reccobeats.NewClient(
 		config.Reccobeats{BaseURL: "http://reccobeats.test"},
 		&http.Client{Transport: transport},
 	)
+	return reccobeats.NewService(client)
 }
 
 func reccobeatsOKTransport(t *testing.T, features []reccobeats.AudioFeatures) http.RoundTripper {
@@ -138,11 +139,9 @@ func TestAnalyticsService_GetMusicTaste_Success(t *testing.T) {
 
 	mock, txProvider := newDB(t)
 	mock.ExpectBegin()
-	for range tracks {
-		mock.ExpectExec(`INSERT INTO track_audio_features`).
-			WithArgs(anyArgs(10)...).
-			WillReturnResult(sqlmock.NewResult(0, 1))
-	}
+	mock.ExpectExec(`INSERT INTO track_audio_features`).
+		WithArgs(anyArgs(len(tracks) * 10)...).
+		WillReturnResult(sqlmock.NewResult(0, int64(len(tracks))))
 	mock.ExpectCommit()
 
 	repo := &mockAnalyticsRepo{
@@ -166,8 +165,7 @@ func TestAnalyticsService_GetMusicTaste_Success(t *testing.T) {
 		},
 	}
 
-	client := newReccobeatsClient(reccobeatsOKTransport(t, features))
-	svc := NewService(repo, client, txProvider)
+	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider)
 	resp, err := svc.GetMusicTaste(ctx, userID)
 
 	if err != nil {
@@ -273,8 +271,8 @@ func TestAnalyticsService_GetMusicTaste_GetTracksError(t *testing.T) {
 		getTracksBySnapshotFn: func(_ context.Context, _ uuid.UUID) ([]track.Track, error) {
 			return nil, expectedErr
 		},
-		upsertAudioFeaturesFn: func(_ context.Context, _ *TrackAudioFeatures) error {
-			t.Fatal("UpsertAudioFeatures must not be called when GetTracks fails")
+		bulkUpsertAudioFeaturesFn: func(_ context.Context, _ []TrackAudioFeatures) error {
+			t.Fatal("BulkUpsertAudioFeatures must not be called when GetTracks fails")
 			return nil
 		},
 	}
@@ -318,8 +316,8 @@ func TestAnalyticsService_GetMusicTaste_ReccobeatsError(t *testing.T) {
 		getTracksBySnapshotFn: func(_ context.Context, _ uuid.UUID) ([]track.Track, error) {
 			return tracks, nil
 		},
-		upsertAudioFeaturesFn: func(_ context.Context, _ *TrackAudioFeatures) error {
-			t.Fatal("UpsertAudioFeatures must not be called when Reccobeats fails")
+		bulkUpsertAudioFeaturesFn: func(_ context.Context, _ []TrackAudioFeatures) error {
+			t.Fatal("BulkUpsertAudioFeatures must not be called when Reccobeats fails")
 			return nil
 		},
 		getAveragesFn: func(_ context.Context, _ uuid.UUID) (*AudioFeatureAverages, int, error) {
@@ -328,7 +326,7 @@ func TestAnalyticsService_GetMusicTaste_ReccobeatsError(t *testing.T) {
 		},
 	}
 
-	client := newReccobeatsClient(roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+	reccobeatsService := newReccobeatsService(roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 		return &http.Response{
 			StatusCode: http.StatusServiceUnavailable,
 			Header:     http.Header{"Content-Type": []string{"application/json"}},
@@ -337,7 +335,7 @@ func TestAnalyticsService_GetMusicTaste_ReccobeatsError(t *testing.T) {
 		}, nil
 	}))
 
-	svc := NewService(repo, client, txProvider)
+	svc := NewService(repo, reccobeatsService, txProvider)
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err == nil {
@@ -354,7 +352,7 @@ func TestAnalyticsService_GetMusicTaste_ReccobeatsError(t *testing.T) {
 	}
 }
 
-// UpsertAudioFeaturesError: UpsertAudioFeatures fails — transaction is rolled back, GetAverages not called.
+// UpsertAudioFeaturesError: BulkUpsertAudioFeatures fails — transaction is rolled back, GetAverages not called.
 func TestAnalyticsService_GetMusicTaste_UpsertAudioFeaturesError(t *testing.T) {
 	t.Parallel()
 
@@ -367,7 +365,7 @@ func TestAnalyticsService_GetMusicTaste_UpsertAudioFeaturesError(t *testing.T) {
 	mock, txProvider := newDB(t)
 	mock.ExpectBegin()
 	mock.ExpectExec(`INSERT INTO track_audio_features`).
-		WithArgs(anyArgs(10)...).
+		WithArgs(anyArgs(len(tracks) * 10)...).
 		WillReturnError(expectedErr)
 	mock.ExpectRollback()
 
@@ -384,15 +382,14 @@ func TestAnalyticsService_GetMusicTaste_UpsertAudioFeaturesError(t *testing.T) {
 		},
 	}
 
-	client := newReccobeatsClient(reccobeatsOKTransport(t, features))
-	svc := NewService(repo, client, txProvider)
+	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider)
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
-	if !strings.Contains(err.Error(), "upsert audio features for track") {
-		t.Fatalf("expected 'upsert audio features for track' in error, got: %v", err)
+	if !strings.Contains(err.Error(), "bulk upsert audio features batch") {
+		t.Fatalf("expected 'bulk upsert audio features batch' in error, got: %v", err)
 	}
 	if !errors.Is(err, expectedErr) {
 		t.Fatalf("expected error to wrap %v, got %v", expectedErr, err)
@@ -417,11 +414,9 @@ func TestAnalyticsService_GetMusicTaste_GetAveragesError(t *testing.T) {
 
 	mock, txProvider := newDB(t)
 	mock.ExpectBegin()
-	for range tracks {
-		mock.ExpectExec(`INSERT INTO track_audio_features`).
-			WithArgs(anyArgs(10)...).
-			WillReturnResult(sqlmock.NewResult(0, 1))
-	}
+	mock.ExpectExec(`INSERT INTO track_audio_features`).
+		WithArgs(anyArgs(len(tracks) * 10)...).
+		WillReturnResult(sqlmock.NewResult(0, int64(len(tracks))))
 	mock.ExpectCommit()
 
 	repo := &mockAnalyticsRepo{
@@ -431,16 +426,12 @@ func TestAnalyticsService_GetMusicTaste_GetAveragesError(t *testing.T) {
 		getTracksBySnapshotFn: func(_ context.Context, _ uuid.UUID) ([]track.Track, error) {
 			return tracks, nil
 		},
-		upsertAudioFeaturesFn: func(_ context.Context, _ *TrackAudioFeatures) error {
-			return nil
-		},
 		getAveragesFn: func(_ context.Context, _ uuid.UUID) (*AudioFeatureAverages, int, error) {
 			return nil, 0, expectedErr
 		},
 	}
 
-	client := newReccobeatsClient(reccobeatsOKTransport(t, features))
-	svc := NewService(repo, client, txProvider)
+	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider)
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err == nil {
@@ -471,11 +462,12 @@ func TestAnalyticsService_GetMusicTaste_BatchPagination(t *testing.T) {
 
 	mock, txProvider := newDB(t)
 	mock.ExpectBegin()
-	for range tracks {
-		mock.ExpectExec(`INSERT INTO track_audio_features`).
-			WithArgs(anyArgs(10)...).
-			WillReturnResult(sqlmock.NewResult(0, 1))
-	}
+	mock.ExpectExec(`INSERT INTO track_audio_features`).
+		WithArgs(anyArgs(audioFeaturesBatchSize * 10)...).
+		WillReturnResult(sqlmock.NewResult(0, audioFeaturesBatchSize))
+	mock.ExpectExec(`INSERT INTO track_audio_features`).
+		WithArgs(anyArgs(5 * 10)...).
+		WillReturnResult(sqlmock.NewResult(0, 5))
 	mock.ExpectCommit()
 
 	var httpCallCount int
@@ -505,16 +497,12 @@ func TestAnalyticsService_GetMusicTaste_BatchPagination(t *testing.T) {
 		getTracksBySnapshotFn: func(_ context.Context, _ uuid.UUID) ([]track.Track, error) {
 			return tracks, nil
 		},
-		upsertAudioFeaturesFn: func(_ context.Context, _ *TrackAudioFeatures) error {
-			return nil
-		},
 		getAveragesFn: func(_ context.Context, _ uuid.UUID) (*AudioFeatureAverages, int, error) {
 			return avgs, len(tracks), nil
 		},
 	}
 
-	client := newReccobeatsClient(transport)
-	svc := NewService(repo, client, txProvider)
+	svc := NewService(repo, newReccobeatsService(transport), txProvider)
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err != nil {
@@ -543,11 +531,9 @@ func TestAnalyticsService_GetMusicTaste_UnknownSpotifyID(t *testing.T) {
 
 	mock, txProvider := newDB(t)
 	mock.ExpectBegin()
-	for range tracks {
-		mock.ExpectExec(`INSERT INTO track_audio_features`).
-			WithArgs(anyArgs(10)...).
-			WillReturnResult(sqlmock.NewResult(0, 1))
-	}
+	mock.ExpectExec(`INSERT INTO track_audio_features`).
+		WithArgs(anyArgs(len(tracks) * 10)...).
+		WillReturnResult(sqlmock.NewResult(0, int64(len(tracks))))
 	mock.ExpectCommit()
 
 	features := makeAudioFeaturesResponse(tracks)
@@ -567,8 +553,7 @@ func TestAnalyticsService_GetMusicTaste_UnknownSpotifyID(t *testing.T) {
 		},
 	}
 
-	client := newReccobeatsClient(reccobeatsOKTransport(t, features))
-	svc := NewService(repo, client, txProvider)
+	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider)
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err != nil {

@@ -58,8 +58,9 @@ func main() {
 	snapshotHandler := snapshot.NewHandler(snapshotSvc)
 
 	reccobeatsClient := reccobeats.NewClient(deps.Config.Reccobeats, deps.HTTPClient)
+	reccobeatsService := reccobeats.NewService(reccobeatsClient)
 	analyticsRepo := analytics.NewRepository(deps.DBConn)
-	analyticsSvc := analytics.NewService(analyticsRepo, reccobeatsClient, txProvider)
+	analyticsSvc := analytics.NewService(analyticsRepo, reccobeatsService, txProvider)
 	analyticsHandler := analytics.NewHandler(analyticsSvc)
 
 	authMiddleware := middleware.NewAuth(tokenSvc)

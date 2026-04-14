@@ -20,20 +20,20 @@ type Service interface {
 }
 
 type service struct {
-	repo             Repository
-	reccobeatsClient *reccobeats.Client
-	txProvider       database.TxProvider
+	repo              Repository
+	reccobeatsService reccobeats.Service
+	txProvider        database.TxProvider
 }
 
 func NewService(
 	repo Repository,
-	reccobeatsClient *reccobeats.Client,
+	reccobeatsService reccobeats.Service,
 	txProvider database.TxProvider,
 ) Service {
 	return &service{
-		repo:             repo,
-		reccobeatsClient: reccobeatsClient,
-		txProvider:       txProvider,
+		repo:              repo,
+		reccobeatsService: reccobeatsService,
+		txProvider:        txProvider,
 	}
 }
 
@@ -75,19 +75,19 @@ func (s *service) GetMusicTaste(ctx context.Context, userID uuid.UUID) (*MusicTa
 				spotifyIDs[i] = t.SpotifyID
 			}
 
-			features, err := s.reccobeatsClient.GetAudioFeaturesBatch(ctx, spotifyIDs)
+			features, err := s.reccobeatsService.GetAudioFeaturesBatch(ctx, spotifyIDs)
 			if err != nil {
 				return fmt.Errorf("fetch audio features batch [%d:%d]: %w", start, end, err)
 			}
 
+			toUpsert := make([]TrackAudioFeatures, 0, len(features))
 			for _, f := range features {
-				// Extract the Spotify ID from the href URL path segment.
 				spotifyID := path.Base(f.Href)
 				t, ok := trackBySpotifyID[spotifyID]
 				if !ok {
 					continue
 				}
-				if err := repo.UpsertAudioFeatures(ctx, &TrackAudioFeatures{
+				toUpsert = append(toUpsert, TrackAudioFeatures{
 					TrackID:          t.ID,
 					Danceability:     f.Danceability,
 					Valence:          f.Valence,
@@ -98,9 +98,11 @@ func (s *service) GetMusicTaste(ctx context.Context, userID uuid.UUID) (*MusicTa
 					Speechiness:      f.Speechiness,
 					Tempo:            f.Tempo,
 					Loudness:         f.Loudness,
-				}); err != nil {
-					return fmt.Errorf("upsert audio features for track %s: %w", t.ID, err)
-				}
+				})
+			}
+
+			if err := repo.BulkUpsertAudioFeatures(ctx, toUpsert); err != nil {
+				return fmt.Errorf("bulk upsert audio features batch [%d:%d]: %w", start, end, err)
 			}
 		}
 		return nil

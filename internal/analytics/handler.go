@@ -30,7 +30,7 @@ func NewHandler(svc Service) *Handler {
 // @Failure      401  {object}  apperrors.HTTPError
 // @Failure      404  {object}  apperrors.HTTPError  "No snapshot found for user"
 // @Failure      500  {object}  apperrors.HTTPError
-// @Router       /analytics/me/top-tracks [get]
+// @Router       /analytics/top-tracks [get]
 func (h *Handler) GetMusicTaste(c *gin.Context) {
 	userID, err := middleware.GetUserID(c)
 	if err != nil {
