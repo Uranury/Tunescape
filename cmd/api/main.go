@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"gitlab.com/Uranury/tunescape/internal/cache"
 	"log"
 	"os"
 	"os/signal"
@@ -33,6 +34,7 @@ func main() {
 	defer cleanup()
 
 	txProvider := database.NewTxProvider(deps.DBConn)
+	redisCache := cache.New(deps.RedisClient)
 
 	userRepo := user.NewRepository(deps.DBConn)
 	userSvc := user.NewService(userRepo)
@@ -60,7 +62,7 @@ func main() {
 	reccobeatsClient := reccobeats.NewClient(deps.Config.Reccobeats, deps.HTTPClient)
 	reccobeatsService := reccobeats.NewService(reccobeatsClient)
 	analyticsRepo := analytics.NewRepository(deps.DBConn)
-	analyticsSvc := analytics.NewService(analyticsRepo, reccobeatsService, txProvider)
+	analyticsSvc := analytics.NewService(analyticsRepo, reccobeatsService, txProvider, deps.Logger, redisCache)
 	analyticsHandler := analytics.NewHandler(analyticsSvc)
 
 	authMiddleware := middleware.NewAuth(tokenSvc)

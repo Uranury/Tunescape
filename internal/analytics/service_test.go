@@ -7,12 +7,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+	"gitlab.com/Uranury/tunescape/internal/cache"
 	"gitlab.com/Uranury/tunescape/internal/reccobeats"
 	"gitlab.com/Uranury/tunescape/internal/snapshot"
 	"gitlab.com/Uranury/tunescape/internal/track"
@@ -42,6 +44,43 @@ func (m *mockAnalyticsRepo) BulkUpsertAudioFeatures(ctx context.Context, feature
 }
 func (m *mockAnalyticsRepo) GetAveragesBySnapshotID(ctx context.Context, snapshotID uuid.UUID) (*AudioFeatureAverages, int, error) {
 	return m.getAveragesFn(ctx, snapshotID)
+}
+
+type mockCache struct {
+	getFn    func(ctx context.Context, key string) ([]byte, error)
+	setFn    func(ctx context.Context, key string, data []byte, ttl time.Duration) error
+	deleteFn func(ctx context.Context, key string) error
+	existsFn func(ctx context.Context, key string) (bool, error)
+}
+
+func (m *mockCache) Get(ctx context.Context, key string) ([]byte, error) {
+	return m.getFn(ctx, key)
+}
+func (m *mockCache) Set(ctx context.Context, key string, data []byte, ttl time.Duration) error {
+	if m.setFn != nil {
+		return m.setFn(ctx, key, data, ttl)
+	}
+	return nil
+}
+func (m *mockCache) Delete(ctx context.Context, key string) error {
+	if m.deleteFn != nil {
+		return m.deleteFn(ctx, key)
+	}
+	return nil
+}
+func (m *mockCache) Exists(ctx context.Context, key string) (bool, error) {
+	if m.existsFn != nil {
+		return m.existsFn(ctx, key)
+	}
+	return false, nil
+}
+
+func noopCache() cache.Cache {
+	return &mockCache{
+		getFn: func(_ context.Context, _ string) ([]byte, error) {
+			return nil, errors.New("cache miss")
+		},
+	}
 }
 
 type roundTripperFunc func(req *http.Request) (*http.Response, error)
@@ -165,7 +204,7 @@ func TestAnalyticsService_GetMusicTaste_Success(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider)
+	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider, slog.Default(), noopCache())
 	resp, err := svc.GetMusicTaste(ctx, userID)
 
 	if err != nil {
@@ -206,7 +245,7 @@ func TestAnalyticsService_GetMusicTaste_NoSnapshot(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, nil, txProvider)
+	svc := NewService(repo, nil, txProvider, slog.Default(), noopCache())
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err == nil {
@@ -238,7 +277,7 @@ func TestAnalyticsService_GetMusicTaste_GetSnapshotError(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, nil, txProvider)
+	svc := NewService(repo, nil, txProvider, slog.Default(), noopCache())
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err == nil {
@@ -277,7 +316,7 @@ func TestAnalyticsService_GetMusicTaste_GetTracksError(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, nil, txProvider)
+	svc := NewService(repo, nil, txProvider, slog.Default(), noopCache())
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err == nil {
@@ -335,7 +374,7 @@ func TestAnalyticsService_GetMusicTaste_ReccobeatsError(t *testing.T) {
 		}, nil
 	}))
 
-	svc := NewService(repo, reccobeatsService, txProvider)
+	svc := NewService(repo, reccobeatsService, txProvider, slog.Default(), noopCache())
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err == nil {
@@ -382,7 +421,7 @@ func TestAnalyticsService_GetMusicTaste_UpsertAudioFeaturesError(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider)
+	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider, slog.Default(), noopCache())
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err == nil {
@@ -431,7 +470,7 @@ func TestAnalyticsService_GetMusicTaste_GetAveragesError(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider)
+	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider, slog.Default(), noopCache())
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err == nil {
@@ -502,7 +541,7 @@ func TestAnalyticsService_GetMusicTaste_BatchPagination(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, newReccobeatsService(transport), txProvider)
+	svc := NewService(repo, newReccobeatsService(transport), txProvider, slog.Default(), noopCache())
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err != nil {
@@ -553,7 +592,7 @@ func TestAnalyticsService_GetMusicTaste_UnknownSpotifyID(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider)
+	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider, slog.Default(), noopCache())
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err != nil {
@@ -564,5 +603,65 @@ func TestAnalyticsService_GetMusicTaste_UnknownSpotifyID(t *testing.T) {
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unmet sqlmock expectations: %v", err)
+	}
+}
+
+// CacheHit: valid cached response is returned immediately — no DB or ReccoBeats calls made.
+func TestAnalyticsService_GetMusicTaste_CacheHit(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	userID := uuid.New()
+	snapID := uuid.New()
+	avgs := defaultAverages()
+
+	expected := MusicTasteResponse{
+		SnapshotID:  snapID,
+		TracksCount: 3,
+		Averages:    *avgs,
+	}
+	cachedBytes, err := json.Marshal(expected)
+	if err != nil {
+		t.Fatalf("marshal cached response: %v", err)
+	}
+
+	c := &mockCache{
+		getFn: func(_ context.Context, key string) ([]byte, error) {
+			if key != "music_taste:"+userID.String() {
+				t.Fatalf("unexpected cache key: %s", key)
+			}
+			return cachedBytes, nil
+		},
+	}
+
+	repo := &mockAnalyticsRepo{
+		getLatestSnapshotFn: func(_ context.Context, _ uuid.UUID) (*snapshot.Snapshot, error) {
+			t.Fatal("GetLatestSnapshotByUserID must not be called on cache hit")
+			return nil, nil
+		},
+		getTracksBySnapshotFn: func(_ context.Context, _ uuid.UUID) ([]track.Track, error) {
+			t.Fatal("GetTracksBySnapshotID must not be called on cache hit")
+			return nil, nil
+		},
+	}
+
+	_, txProvider := newDB(t)
+	svc := NewService(repo, nil, txProvider, slog.Default(), c)
+	resp, err := svc.GetMusicTaste(ctx, userID)
+
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if resp == nil {
+		t.Fatal("expected non-nil response")
+	}
+	if resp.SnapshotID != snapID {
+		t.Fatalf("expected snapshotID %s, got %s", snapID, resp.SnapshotID)
+	}
+	if resp.TracksCount != expected.TracksCount {
+		t.Fatalf("expected tracksCount %d, got %d", expected.TracksCount, resp.TracksCount)
+	}
+	if resp.Averages != *avgs {
+		t.Fatalf("expected averages %+v, got %+v", *avgs, resp.Averages)
 	}
 }
