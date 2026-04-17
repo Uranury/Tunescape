@@ -2,11 +2,15 @@ package analytics
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"path"
+	"time"
 
 	"github.com/google/uuid"
+	"gitlab.com/Uranury/tunescape/internal/cache"
 	"gitlab.com/Uranury/tunescape/internal/reccobeats"
 	"gitlab.com/Uranury/tunescape/internal/track"
 	"gitlab.com/Uranury/tunescape/pkg/apperrors"
@@ -23,21 +27,37 @@ type service struct {
 	repo              Repository
 	reccobeatsService reccobeats.Service
 	txProvider        database.TxProvider
+	logger            *slog.Logger
+	cache             cache.Cache
 }
 
 func NewService(
 	repo Repository,
 	reccobeatsService reccobeats.Service,
 	txProvider database.TxProvider,
+	logger *slog.Logger,
+	cache cache.Cache,
 ) Service {
 	return &service{
 		repo:              repo,
 		reccobeatsService: reccobeatsService,
 		txProvider:        txProvider,
+		logger:            logger,
+		cache:             cache,
 	}
 }
 
 func (s *service) GetMusicTaste(ctx context.Context, userID uuid.UUID) (*MusicTasteResponse, error) {
+	var result MusicTasteResponse
+
+	cached, err := s.cache.Get(ctx, "music_taste:"+userID.String())
+	if err == nil && cached != nil {
+		if unmarshalErr := json.Unmarshal(cached, &result); unmarshalErr == nil {
+			return &result, nil
+		}
+		s.logger.Error("failed to unmarshal cache", "err", err)
+	}
+
 	snap, err := s.repo.GetLatestSnapshotByUserID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, apperrors.ErrNoSnapshot) {
@@ -116,9 +136,20 @@ func (s *service) GetMusicTaste(ctx context.Context, userID uuid.UUID) (*MusicTa
 		return nil, fmt.Errorf("aggregate audio features: %w", err)
 	}
 
-	return &MusicTasteResponse{
+	result = MusicTasteResponse{
 		SnapshotID:  snap.ID,
 		TracksCount: count,
 		Averages:    *avgs,
-	}, nil
+	}
+
+	resultBytes, err := json.Marshal(result)
+	if err == nil {
+		if err := s.cache.Set(ctx, "music_taste:"+userID.String(), resultBytes, time.Hour*24); err != nil {
+			s.logger.Warn("failed to cache music_taste", "error", err)
+		}
+	} else {
+		s.logger.Warn("failed to marshal music_taste", "error", err)
+	}
+
+	return &result, nil
 }
