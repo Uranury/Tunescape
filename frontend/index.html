@@ -3,14 +3,15 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Tunescape - Your Spotify Music Analytics</title>
+		<title>Tunescape - Spotify Music Analytics</title>
+		<!-- Chart.js CDN for trends chart -->
+		<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 		<style>
 			* {
 				margin: 0;
 				padding: 0;
 				box-sizing: border-box;
 			}
-
 			body {
 				font-family:
 					-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
@@ -18,8 +19,6 @@
 				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 				min-height: 100vh;
 			}
-
-			/* Navbar */
 			.navbar {
 				background: rgba(255, 255, 255, 0.95);
 				backdrop-filter: blur(10px);
@@ -32,7 +31,6 @@
 				top: 0;
 				z-index: 100;
 			}
-
 			.logo {
 				font-size: 1.5rem;
 				font-weight: bold;
@@ -41,27 +39,21 @@
 				-webkit-text-fill-color: transparent;
 				background-clip: text;
 			}
-
 			.nav-buttons {
 				display: flex;
 				gap: 1rem;
 			}
-
-			/* Main Container */
 			.container {
-				max-width: 1200px;
+				max-width: 1400px;
 				margin: 0 auto;
 				padding: 2rem;
 			}
-
-			/* Auth Forms */
 			.auth-container {
 				display: flex;
 				justify-content: center;
 				align-items: center;
 				min-height: 80vh;
 			}
-
 			.auth-card {
 				background: white;
 				border-radius: 20px;
@@ -70,24 +62,20 @@
 				max-width: 450px;
 				box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 			}
-
 			.auth-card h2 {
 				text-align: center;
 				margin-bottom: 2rem;
 				color: #333;
 			}
-
 			.form-group {
 				margin-bottom: 1.5rem;
 			}
-
 			.form-group label {
 				display: block;
 				margin-bottom: 0.5rem;
 				color: #555;
 				font-weight: 500;
 			}
-
 			.form-group input {
 				width: 100%;
 				padding: 0.75rem;
@@ -96,12 +84,10 @@
 				font-size: 1rem;
 				transition: all 0.3s;
 			}
-
 			.form-group input:focus {
 				outline: none;
 				border-color: #667eea;
 			}
-
 			.btn {
 				width: 100%;
 				padding: 0.75rem;
@@ -112,55 +98,46 @@
 				cursor: pointer;
 				transition: all 0.3s;
 			}
-
 			.btn-primary {
 				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 				color: white;
 			}
-
 			.btn-primary:hover {
 				transform: translateY(-2px);
 				box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
 			}
-
 			.btn-spotify {
 				background: #1db954;
 				color: white;
 				margin-top: 1rem;
 			}
-
 			.btn-spotify:hover {
 				background: #1ed760;
 			}
-
 			.btn-outline {
 				background: transparent;
 				border: 2px solid #667eea;
 				color: #667eea;
+				width: auto;
+				padding: 0.5rem 1rem;
 			}
-
 			.switch-auth {
 				text-align: center;
 				margin-top: 1.5rem;
 				color: #666;
 			}
-
 			.switch-auth a {
 				color: #667eea;
 				cursor: pointer;
 				text-decoration: none;
 				font-weight: 600;
 			}
-
-			/* Dashboard */
 			.dashboard-container {
 				display: none;
 			}
-
 			.dashboard-container.active {
 				display: block;
 			}
-
 			.welcome-header {
 				background: white;
 				border-radius: 20px;
@@ -168,14 +145,12 @@
 				margin-bottom: 2rem;
 				box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
 			}
-
 			.user-info {
 				display: flex;
 				align-items: center;
 				gap: 1.5rem;
 				flex-wrap: wrap;
 			}
-
 			.user-avatar {
 				width: 80px;
 				height: 80px;
@@ -187,14 +162,6 @@
 				font-size: 2rem;
 				color: white;
 			}
-
-			.user-avatar img {
-				width: 100%;
-				height: 100%;
-				border-radius: 50%;
-				object-fit: cover;
-			}
-
 			.spotify-status {
 				display: inline-flex;
 				align-items: center;
@@ -204,25 +171,20 @@
 				font-size: 0.875rem;
 				font-weight: 600;
 			}
-
 			.spotify-connected {
 				background: #1db95420;
 				color: #1db954;
 			}
-
 			.spotify-disconnected {
 				background: #ff444420;
 				color: #ff4444;
 			}
-
-			/* Stats Cards */
 			.stats-grid {
 				display: grid;
-				grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+				grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 				gap: 1.5rem;
 				margin-bottom: 2rem;
 			}
-
 			.stat-card {
 				background: white;
 				border-radius: 15px;
@@ -230,28 +192,23 @@
 				text-align: center;
 				box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 			}
-
 			.stat-number {
-				font-size: 2.5rem;
+				font-size: 2rem;
 				font-weight: bold;
 				color: #667eea;
 				margin-bottom: 0.5rem;
 			}
-
 			.stat-label {
 				color: #666;
 				font-size: 0.875rem;
 			}
-
-			/* Tracks List */
-			.tracks-section {
+			.card {
 				background: white;
 				border-radius: 20px;
-				padding: 2rem;
+				padding: 1.5rem;
 				margin-bottom: 2rem;
 				box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
 			}
-
 			.section-header {
 				display: flex;
 				justify-content: space-between;
@@ -260,12 +217,59 @@
 				flex-wrap: wrap;
 				gap: 1rem;
 			}
-
+			.leaderboard-buttons,
+			.action-buttons {
+				display: flex;
+				gap: 0.75rem;
+				flex-wrap: wrap;
+			}
+			.leaderboard-btn,
+			.action-btn {
+				padding: 0.5rem 1rem;
+				border: none;
+				border-radius: 20px;
+				background: #f0f0f0;
+				cursor: pointer;
+				transition: all 0.2s;
+			}
+			.leaderboard-btn.active,
+			.action-btn.primary {
+				background: #667eea;
+				color: white;
+			}
+			.action-btn {
+				background: #e0e7ff;
+				color: #4f46e5;
+				font-weight: 500;
+			}
+			.action-btn:hover {
+				background: #c7d2fe;
+			}
+			table {
+				width: 100%;
+				border-collapse: collapse;
+			}
+			th,
+			td {
+				padding: 0.75rem;
+				text-align: left;
+				border-bottom: 1px solid #eee;
+			}
+			th {
+				font-weight: 600;
+				color: #666;
+			}
+			.rank-col {
+				width: 60px;
+			}
+			.score-col {
+				width: 100px;
+				text-align: right;
+			}
 			.tracks-list {
 				display: grid;
 				gap: 0.75rem;
 			}
-
 			.track-item {
 				display: flex;
 				align-items: center;
@@ -275,34 +279,24 @@
 				border-radius: 10px;
 				transition: all 0.3s;
 			}
-
 			.track-item:hover {
 				transform: translateX(5px);
 				background: #e9ecef;
 			}
-
 			.track-rank {
 				font-size: 1.25rem;
 				font-weight: bold;
 				color: #667eea;
 				min-width: 50px;
 			}
-
 			.track-info {
 				flex: 1;
 			}
-
 			.track-name {
 				font-weight: 600;
 				color: #333;
 				margin-bottom: 0.25rem;
 			}
-
-			.track-popularity {
-				font-size: 0.75rem;
-				color: #666;
-			}
-
 			.popularity-bar {
 				width: 100px;
 				height: 6px;
@@ -310,24 +304,19 @@
 				border-radius: 3px;
 				overflow: hidden;
 			}
-
 			.popularity-fill {
 				height: 100%;
 				background: linear-gradient(90deg, #667eea, #764ba2);
 				transition: width 0.5s ease;
 			}
-
-			/* Loading Spinner */
 			.loading {
 				display: none;
 				text-align: center;
 				padding: 2rem;
 			}
-
 			.loading.active {
 				display: block;
 			}
-
 			.spinner {
 				border: 3px solid #f3f3f3;
 				border-top: 3px solid #667eea;
@@ -337,7 +326,6 @@
 				animation: spin 1s linear infinite;
 				margin: 0 auto 1rem;
 			}
-
 			@keyframes spin {
 				0% {
 					transform: rotate(0deg);
@@ -346,41 +334,33 @@
 					transform: rotate(360deg);
 				}
 			}
-
-			/* Alert Messages */
 			.alert {
 				padding: 1rem;
 				border-radius: 10px;
 				margin-bottom: 1rem;
 				display: none;
 			}
-
 			.alert.show {
 				display: block;
 			}
-
 			.alert-success {
 				background: #d4edda;
 				color: #155724;
 				border: 1px solid #c3e6cb;
 			}
-
 			.alert-error {
 				background: #f8d7da;
 				color: #721c24;
 				border: 1px solid #f5c6cb;
 			}
-
-			/* Responsive */
+			canvas {
+				max-height: 400px;
+				width: 100%;
+			}
 			@media (max-width: 768px) {
 				.container {
 					padding: 1rem;
 				}
-
-				.track-item {
-					flex-wrap: wrap;
-				}
-
 				.section-header {
 					flex-direction: column;
 					align-items: stretch;
@@ -389,13 +369,11 @@
 		</style>
 	</head>
 	<body>
-		<!-- Navbar -->
 		<nav class="navbar">
 			<div class="logo">🎵 Tunescape</div>
 			<div class="nav-buttons">
 				<button
 					class="btn-outline"
-					style="width: auto; padding: 0.5rem 1rem"
 					onclick="logout()"
 					id="logout-btn"
 					style="display: none"
@@ -404,28 +382,24 @@
 				</button>
 			</div>
 		</nav>
-
 		<div class="container">
 			<!-- Auth Container -->
 			<div id="auth-container" class="auth-container">
 				<div class="auth-card">
 					<h2 id="auth-title">Welcome to Tunescape</h2>
-
 					<div id="alert" class="alert"></div>
-
-					<!-- Login Form -->
 					<div id="login-form">
 						<div class="form-group">
-							<label>Email</label>
-							<input
+							<label>Email</label
+							><input
 								type="email"
 								id="login-email"
 								placeholder="you@example.com"
 							/>
 						</div>
 						<div class="form-group">
-							<label>Password</label>
-							<input
+							<label>Password</label
+							><input
 								type="password"
 								id="login-password"
 								placeholder="Enter your password"
@@ -436,28 +410,26 @@
 							Don't have an account? <a onclick="showSignup()">Sign up</a>
 						</div>
 					</div>
-
-					<!-- Signup Form -->
 					<div id="signup-form" style="display: none">
 						<div class="form-group">
-							<label>Email</label>
-							<input
+							<label>Email</label
+							><input
 								type="email"
 								id="signup-email"
 								placeholder="you@example.com"
 							/>
 						</div>
 						<div class="form-group">
-							<label>Display Name</label>
-							<input
+							<label>Display Name</label
+							><input
 								type="text"
 								id="signup-name"
 								placeholder="How should we call you?"
 							/>
 						</div>
 						<div class="form-group">
-							<label>Password</label>
-							<input
+							<label>Password</label
+							><input
 								type="password"
 								id="signup-password"
 								placeholder="At least 8 characters"
@@ -473,9 +445,8 @@
 				</div>
 			</div>
 
-			<!-- Dashboard Container -->
+			<!-- Dashboard -->
 			<div id="dashboard-container" class="dashboard-container">
-				<!-- Welcome Header -->
 				<div class="welcome-header">
 					<div class="user-info">
 						<div class="user-avatar" id="user-avatar">👤</div>
@@ -492,7 +463,7 @@
 					</div>
 				</div>
 
-				<!-- Stats Grid -->
+				<!-- Stats cards (updated after snapshot) -->
 				<div class="stats-grid">
 					<div class="stat-card">
 						<div class="stat-number" id="total-tracks">0</div>
@@ -508,14 +479,12 @@
 					</div>
 				</div>
 
-				<!-- Spotify Connection Card -->
-				<div class="tracks-section" id="spotify-connect-card">
-					<div class="section-header">
-						<h3>🎧 Connect Your Spotify</h3>
-					</div>
+				<!-- Spotify Connection card -->
+				<div class="card" id="spotify-connect-card">
+					<div class="section-header"><h3>🎧 Connect Your Spotify</h3></div>
 					<p style="margin-bottom: 1rem; color: #666">
 						Connect your Spotify account to see your top 50 tracks and get
-						personalized music insights!
+						insights.
 					</p>
 					<button
 						class="btn btn-spotify"
@@ -526,120 +495,149 @@
 					</button>
 				</div>
 
-				<!-- Loading Spinner -->
+				<!-- Loading spinner -->
 				<div id="loading" class="loading">
 					<div class="spinner"></div>
-					<p>Fetching your top tracks from Spotify...</p>
+					<p>Loading...</p>
 				</div>
 
-				<!-- Top Tracks Section -->
-				<div id="tracks-section" class="tracks-section" style="display: none">
+				<!-- Top Tracks section -->
+				<div id="tracks-section" class="card" style="display: none">
 					<div class="section-header">
 						<h3>🎵 Your Top 50 Tracks</h3>
-						<button
-							class="btn-outline"
-							onclick="refreshTopTracks()"
-							style="width: auto; padding: 0.5rem 1rem"
-						>
+						<button class="btn-outline" onclick="refreshTopTracks()">
 							🔄 Refresh
 						</button>
 					</div>
-					<div id="tracks-list" class="tracks-list">
-						<!-- Tracks will be loaded here -->
+					<div id="tracks-list" class="tracks-list"></div>
+				</div>
+
+				<!-- Action Buttons: Analyze Taste, Trends, Report -->
+				<div class="card">
+					<div class="section-header">
+						<h3>📊 Music Analytics</h3>
+						<div class="action-buttons">
+							<button class="action-btn" onclick="analyzeMusicTaste()">
+								🎵 Analyze My Taste
+							</button>
+							<button class="action-btn" onclick="loadTrends()">
+								📈 Show Trends
+							</button>
+							<button class="action-btn" onclick="downloadReport()">
+								📄 Download PDF Report
+							</button>
+						</div>
+					</div>
+					<div id="trends-container" style="display: none; margin-top: 1rem">
+						<canvas id="trendsChart" width="800" height="300"></canvas>
+					</div>
+					<div
+						id="taste-result"
+						style="margin-top: 1rem; font-size: 0.9rem; color: #555"
+					></div>
+				</div>
+
+				<!-- Global Leaderboards -->
+				<div class="card">
+					<div class="section-header">
+						<h3>🏆 Global Leaderboards</h3>
+						<div class="leaderboard-buttons">
+							<button
+								class="leaderboard-btn"
+								data-feature="valence"
+								onclick="loadLeaderboard('valence')"
+							>
+								Valence
+							</button>
+							<button
+								class="leaderboard-btn"
+								data-feature="energy"
+								onclick="loadLeaderboard('energy')"
+							>
+								Energy
+							</button>
+							<button
+								class="leaderboard-btn"
+								data-feature="danceability"
+								onclick="loadLeaderboard('danceability')"
+							>
+								Danceability
+							</button>
+							<button
+								class="leaderboard-btn"
+								data-feature="acousticness"
+								onclick="loadLeaderboard('acousticness')"
+							>
+								Acousticness
+							</button>
+						</div>
+					</div>
+					<div id="leaderboard-content">
+						<p style="color: #666; text-align: center">
+							Click a feature to see top users
+						</p>
 					</div>
 				</div>
 			</div>
 		</div>
 
 		<script>
-			// Global state
 			let currentAccessToken = null
-			let currentUser = null
+			let trendsChart = null
 
-			// Show alert message
+			// Helper: show alert
 			function showAlert(message, type = 'error') {
-				const alert = document.getElementById('alert')
-				alert.className = `alert alert-${type} show`
-				alert.textContent = message
-				setTimeout(() => {
-					alert.classList.remove('show')
-				}, 5000)
+				const alertDiv = document.getElementById('alert')
+				alertDiv.className = `alert alert-${type} show`
+				alertDiv.textContent = message
+				setTimeout(() => alertDiv.classList.remove('show'), 5000)
 			}
 
-			// Show/hide loading
 			function setLoading(show) {
-				const loading = document.getElementById('loading')
-				if (show) {
-					loading.classList.add('active')
-				} else {
-					loading.classList.remove('active')
-				}
+				const loader = document.getElementById('loading')
+				show
+					? loader.classList.add('active')
+					: loader.classList.remove('active')
 			}
 
-			// API Request helper
 			async function apiRequest(
 				url,
 				method,
 				body = null,
 				requiresAuth = false,
 			) {
-				const headers = {
-					'Content-Type': 'application/json',
-				}
-
-				if (requiresAuth && currentAccessToken) {
+				const headers = { 'Content-Type': 'application/json' }
+				if (requiresAuth && currentAccessToken)
 					headers['Authorization'] = `Bearer ${currentAccessToken}`
-				}
-
-				const options = {
-					method: method,
-					credentials: 'same-origin',
-					headers: headers,
-				}
-
-				if (body) {
-					options.body = JSON.stringify(body)
-				}
-
+				const options = { method, credentials: 'same-origin', headers }
+				if (body) options.body = JSON.stringify(body)
 				const response = await fetch(url, options)
 				let data
 				const contentType = response.headers.get('content-type')
-				if (contentType && contentType.includes('application/json')) {
+				if (contentType && contentType.includes('application/json'))
 					data = await response.json()
-				} else {
-					data = await response.text()
-				}
-
+				else data = await response.text()
 				return { ok: response.ok, status: response.status, data }
 			}
 
-			// Authentication functions
+			// Authentication
 			async function login() {
 				const email = document.getElementById('login-email').value
 				const password = document.getElementById('login-password').value
-
 				if (!email || !password) {
 					showAlert('Please fill in all fields')
 					return
 				}
-
 				setLoading(true)
-				const response = await apiRequest('/auth/login', 'POST', {
-					email,
-					password,
-				})
+				const res = await apiRequest('/auth/login', 'POST', { email, password })
 				setLoading(false)
-
-				if (response.ok && response.data.access_token) {
-					currentAccessToken = response.data.access_token
+				if (res.ok && res.data.access_token) {
+					currentAccessToken = res.data.access_token
 					await loadUserData()
 					showDashboard()
 					showAlert('Login successful!', 'success')
 				} else {
-					showAlert(
-						response.data.error ||
-							'Login failed. Please check your credentials.',
-					)
+					showAlert(res.data.error || 'Login failed')
 				}
 			}
 
@@ -647,164 +645,274 @@
 				const email = document.getElementById('signup-email').value
 				const password = document.getElementById('signup-password').value
 				const displayName = document.getElementById('signup-name').value
-
 				if (!email || !password || !displayName) {
-					showAlert('Please fill in all fields')
+					showAlert('Please fill all fields')
 					return
 				}
-
 				if (password.length < 8) {
 					showAlert('Password must be at least 8 characters')
 					return
 				}
-
 				setLoading(true)
-				const response = await apiRequest('/auth/signup', 'POST', {
+				const res = await apiRequest('/auth/signup', 'POST', {
 					email,
 					password,
 					display_name: displayName,
 				})
 				setLoading(false)
-
-				if (response.ok && response.data.access_token) {
-					currentAccessToken = response.data.access_token
+				if (res.ok && res.data.access_token) {
+					currentAccessToken = res.data.access_token
 					await loadUserData()
 					showDashboard()
-					showAlert('Account created successfully!', 'success')
+					showAlert('Account created!', 'success')
 				} else {
-					showAlert(
-						response.data.error ||
-							'Signup failed. Email might already be in use.',
-					)
+					showAlert(res.data.error || 'Signup failed')
 				}
 			}
 
 			async function logout() {
 				await apiRequest('/auth/logout', 'POST')
 				currentAccessToken = null
-				currentUser = null
 				showAuth()
-				showAlert('Logged out successfully', 'success')
+				showAlert('Logged out', 'success')
 			}
 
-			// Load user data and check Spotify connection
 			async function loadUserData() {
-				// Try to get user info via a protected endpoint
-				// Since there's no /me endpoint, we'll use the refresh endpoint to validate
-				const response = await apiRequest('/auth/refresh', 'POST', null, true)
-
-				if (response.ok && response.data.access_token) {
-					currentAccessToken = response.data.access_token
-
-					// Try to get user info from the snapshot endpoint (will tell us if Spotify is connected)
-					const testResponse = await apiRequest(
-						'/me/snapshots',
-						'POST',
-						null,
-						true,
-					)
-
-					// Update UI based on Spotify connection status
+				const res = await apiRequest('/auth/refresh', 'POST', null, true)
+				if (res.ok && res.data.access_token) {
+					currentAccessToken = res.data.access_token
+					// Check Spotify connection by trying to create a snapshot
+					const test = await apiRequest('/me/snapshots', 'POST', null, true)
 					const spotifyStatus = document.getElementById('spotify-status')
-					const spotifyConnectCard = document.getElementById(
-						'spotify-connect-card',
-					)
-
-					if (testResponse.status === 422) {
-						// Spotify not connected
+					const connectCard = document.getElementById('spotify-connect-card')
+					if (test.status === 422) {
 						spotifyStatus.className = 'spotify-status spotify-disconnected'
 						spotifyStatus.innerHTML = '🔴 Spotify not connected'
-						spotifyConnectCard.style.display = 'block'
+						connectCard.style.display = 'block'
 						document.getElementById('tracks-section').style.display = 'none'
-					} else if (testResponse.ok) {
-						// Spotify is connected and we got tracks
+					} else if (test.ok) {
 						spotifyStatus.className = 'spotify-status spotify-connected'
 						spotifyStatus.innerHTML = '🟢 Spotify connected'
-						spotifyConnectCard.style.display = 'none'
+						connectCard.style.display = 'none'
 						await loadTopTracks()
 					}
-
-					// Set user display info (from signup)
-					document.getElementById('user-name').textContent = 'Music Lover'
+					document.getElementById('user-name').textContent = 'Music Explorer'
 					document.getElementById('user-email').textContent =
 						'Connected to Tunescape'
 				}
 			}
 
-			// Load top tracks
 			async function loadTopTracks() {
 				setLoading(true)
-				const response = await apiRequest('/me/snapshots', 'POST', null, true)
+				const res = await apiRequest('/me/snapshots', 'POST', null, true)
 				setLoading(false)
-
-				if (response.ok && response.data.tracks) {
-					displayTracks(response.data)
-				} else if (response.status === 422) {
-					showAlert('Please connect your Spotify account first', 'error')
-				} else if (response.status === 401) {
-					showAlert('Session expired. Please login again.', 'error')
+				if (res.ok && res.data.tracks) displayTracks(res.data)
+				else if (res.status === 422) showAlert('Connect Spotify first', 'error')
+				else if (res.status === 401) {
+					showAlert('Session expired', 'error')
 					logout()
-				} else {
-					showAlert('Failed to load tracks. Please try again.', 'error')
-				}
+				} else showAlert('Failed to load tracks', 'error')
 			}
 
-			// Display tracks in UI
 			function displayTracks(snapshot) {
 				const tracks = snapshot.tracks
-				const totalTracks = tracks.length
-				const avgPopularity =
-					tracks.reduce((sum, t) => sum + t.popularity, 0) / totalTracks
-				const lastSnapshot = new Date(snapshot.created_at).toLocaleDateString()
-
-				// Update stats
-				document.getElementById('total-tracks').textContent = totalTracks
+				const total = tracks.length
+				const avgPop = tracks.reduce((s, t) => s + t.popularity, 0) / total
+				document.getElementById('total-tracks').textContent = total
 				document.getElementById('avg-popularity').textContent =
-					avgPopularity.toFixed(1)
-				document.getElementById('last-snapshot').textContent = lastSnapshot
-
-				// Display tracks
-				const tracksList = document.getElementById('tracks-list')
-				tracksList.innerHTML = ''
-
-				tracks.forEach((track, index) => {
-					const trackItem = document.createElement('div')
-					trackItem.className = 'track-item'
-					trackItem.innerHTML = `
-          <div class="track-rank">#${index + 1}</div>
-          <div class="track-info">
-            <div class="track-name">${escapeHtml(track.name)}</div>
-            <div class="track-popularity">
-              Popularity: ${track.popularity}/100
-              <div class="popularity-bar">
-                <div class="popularity-fill" style="width: ${track.popularity}%"></div>
-              </div>
-            </div>
-          </div>
-        `
-					tracksList.appendChild(trackItem)
+					avgPop.toFixed(1)
+				document.getElementById('last-snapshot').textContent = new Date(
+					snapshot.created_at,
+				).toLocaleDateString()
+				const container = document.getElementById('tracks-list')
+				container.innerHTML = ''
+				tracks.forEach((t, idx) => {
+					const div = document.createElement('div')
+					div.className = 'track-item'
+					div.innerHTML = `
+                    <div class="track-rank">#${idx + 1}</div>
+                    <div class="track-info">
+                        <div class="track-name">${escapeHtml(t.name)}</div>
+                        <div class="track-popularity">
+                            Popularity: ${t.popularity}/100
+                            <div class="popularity-bar"><div class="popularity-fill" style="width: ${t.popularity}%"></div></div>
+                        </div>
+                    </div>`
+					container.appendChild(div)
 				})
-
-				// Show tracks section
 				document.getElementById('tracks-section').style.display = 'block'
 			}
 
 			async function refreshTopTracks() {
 				await loadTopTracks()
-				showAlert('Top tracks refreshed!', 'success')
+				showAlert('Tracks refreshed', 'success')
 			}
-
 			function connectSpotify() {
 				window.location.href = '/auth/spotify/login'
 			}
 
-			// UI Navigation
+			// Analyze Music Taste (calls /analytics/top-tracks and pushes scores)
+			async function analyzeMusicTaste() {
+				setLoading(true)
+				const res = await apiRequest('/analytics/top-tracks', 'GET', null, true)
+				setLoading(false)
+				const resultDiv = document.getElementById('taste-result')
+				if (res.ok && res.data) {
+					const a = res.data.averages
+					resultDiv.innerHTML = `
+                    <strong>✨ Your Music Taste (averages)</strong><br>
+                    🎸 Danceability: ${a.danceability.toFixed(3)} &nbsp;|&nbsp;
+                    😊 Valence: ${a.valence.toFixed(3)} &nbsp;|&nbsp;
+                    ⚡ Energy: ${a.energy.toFixed(3)} &nbsp;|&nbsp;
+                    🎻 Acousticness: ${a.acousticness.toFixed(3)}<br>
+                    <small>(Scores pushed to global leaderboards)</small>
+                `
+					showAlert('Taste analyzed! Check leaderboards.', 'success')
+					// Refresh active leaderboard if any
+					const active = document.querySelector('.leaderboard-btn.active')
+					if (active) loadLeaderboard(active.dataset.feature)
+				} else {
+					resultDiv.innerHTML =
+						'<span style="color:red;">Failed to analyze. Make sure you have a snapshot and audio features.</span>'
+					showAlert('Analyze failed. Have you created a snapshot?', 'error')
+				}
+			}
+
+			// Trends: fetch /me/trends and render chart
+			async function loadTrends() {
+				setLoading(true)
+				const res = await apiRequest('/me/trends', 'GET', null, true)
+				setLoading(false)
+				const container = document.getElementById('trends-container')
+				if (
+					!res.ok ||
+					!res.data ||
+					!res.data.points ||
+					res.data.points.length === 0
+				) {
+					container.style.display = 'block'
+					container.innerHTML =
+						'<p style="color:#666;">No trends data yet. Create multiple snapshots over time.</p>'
+					if (trendsChart) {
+						trendsChart.destroy()
+						trendsChart = null
+					}
+					return
+				}
+				const points = res.data.points
+				const labels = points.map(p =>
+					new Date(p.created_at).toLocaleDateString(),
+				)
+				const datasets = [
+					{
+						label: 'Danceability',
+						data: points.map(p => p.danceability),
+						borderColor: '#f97316',
+						tension: 0.1,
+					},
+					{
+						label: 'Valence',
+						data: points.map(p => p.valence),
+						borderColor: '#22c55e',
+						tension: 0.1,
+					},
+					{
+						label: 'Energy',
+						data: points.map(p => p.energy),
+						borderColor: '#ef4444',
+						tension: 0.1,
+					},
+					{
+						label: 'Acousticness',
+						data: points.map(p => p.acousticness),
+						borderColor: '#3b82f6',
+						tension: 0.1,
+					},
+				]
+				const ctx = document.getElementById('trendsChart').getContext('2d')
+				if (trendsChart) trendsChart.destroy()
+				trendsChart = new Chart(ctx, {
+					type: 'line',
+					data: { labels, datasets },
+					options: { responsive: true, maintainAspectRatio: true },
+				})
+				container.style.display = 'block'
+			}
+
+			// Download PDF report
+			async function downloadReport() {
+				setLoading(true)
+				const response = await fetch('/me/report', {
+					headers: { Authorization: `Bearer ${currentAccessToken}` },
+					credentials: 'same-origin',
+				})
+				setLoading(false)
+				if (response.ok) {
+					const blob = await response.blob()
+					const url = window.URL.createObjectURL(blob)
+					const a = document.createElement('a')
+					a.href = url
+					a.download = 'tunescape-report.pdf'
+					document.body.appendChild(a)
+					a.click()
+					a.remove()
+					window.URL.revokeObjectURL(url)
+					showAlert('Report downloaded!', 'success')
+				} else {
+					showAlert('Failed to generate report', 'error')
+				}
+			}
+
+			// Leaderboard
+			async function loadLeaderboard(feature) {
+				document
+					.querySelectorAll('.leaderboard-btn')
+					.forEach(btn => btn.classList.remove('active'))
+				const activeBtn = document.querySelector(
+					`.leaderboard-btn[data-feature="${feature}"]`,
+				)
+				if (activeBtn) activeBtn.classList.add('active')
+				const limit = 10
+				try {
+					const res = await fetch(`/leaderboards/${feature}?limit=${limit}`)
+					if (!res.ok) throw new Error(`HTTP ${res.status}`)
+					const data = await res.json()
+					if (!data.entries || data.entries.length === 0) {
+						document.getElementById('leaderboard-content').innerHTML =
+							'<p style="color:#666;">No scores yet. Analyze your taste first!</p>'
+						return
+					}
+					const html = `
+                    <table>
+                        <thead><tr><th class="rank-col">Rank</th><th>User</th><th class="score-col">Score</th></tr></thead>
+                        <tbody>
+                            ${data.entries
+															.map(
+																e => `
+                                <tr>
+                                    <td>#${e.rank}</td>
+                                    <td>${escapeHtml(e.display_name || e.user_id.slice(0, 8))}</td>
+                                    <td class="score-col">${e.score.toFixed(3)}</td>
+                                </tr>
+                            `,
+															)
+															.join('')}
+                        </tbody>
+                    </table>`
+					document.getElementById('leaderboard-content').innerHTML = html
+				} catch (err) {
+					document.getElementById('leaderboard-content').innerHTML =
+						`<p style="color:red;">Error: ${err.message}</p>`
+				}
+			}
+
+			// UI helpers
 			function showDashboard() {
 				document.getElementById('auth-container').style.display = 'none'
 				document.getElementById('dashboard-container').classList.add('active')
 				document.getElementById('logout-btn').style.display = 'block'
+				loadLeaderboard('valence') // default
 			}
-
 			function showAuth() {
 				document.getElementById('auth-container').style.display = 'flex'
 				document
@@ -813,35 +921,30 @@
 				document.getElementById('logout-btn').style.display = 'none'
 				showLogin()
 			}
-
 			function showLogin() {
 				document.getElementById('login-form').style.display = 'block'
 				document.getElementById('signup-form').style.display = 'none'
 				document.getElementById('auth-title').textContent = 'Welcome Back'
 			}
-
 			function showSignup() {
 				document.getElementById('login-form').style.display = 'none'
 				document.getElementById('signup-form').style.display = 'block'
 				document.getElementById('auth-title').textContent = 'Create Account'
 			}
-
-			// Helper function to escape HTML
-			function escapeHtml(text) {
+			function escapeHtml(str) {
 				const div = document.createElement('div')
-				div.textContent = text
+				div.textContent = str
 				return div.innerHTML
 			}
 
-			// Check OAuth callback and restore session
+			// OAuth callback handling
 			async function checkOAuthCallback() {
 				const params = new URLSearchParams(window.location.search)
 				const connected = params.get('connected')
 				const error = params.get('error')
-
 				if (connected === '1') {
 					showAlert(
-						'✅ Spotify connected successfully! Click Refresh to see your top tracks.',
+						'✅ Spotify connected! Click Refresh to see top tracks.',
 						'success',
 					)
 					window.history.replaceState(
@@ -851,18 +954,14 @@
 					)
 					await loadUserData()
 				} else if (error) {
-					const errorMessages = {
-						not_logged_in: 'Please login before connecting Spotify.',
-						session_expired: 'Your session expired. Please login again.',
-						invalid_state: 'Security check failed. Please try again.',
-						spotify_already_linked:
-							'This Spotify account is already linked to another user.',
-						db_error: 'Server error. Please try again later.',
+					const msgs = {
+						not_logged_in: 'Please login first.',
+						session_expired: 'Login again.',
+						invalid_state: 'Security error.',
+						spotify_already_linked: 'Spotify already linked to another user.',
+						db_error: 'Server error.',
 					}
-					showAlert(
-						errorMessages[error] || `Connection failed: ${error}`,
-						'error',
-					)
+					showAlert(msgs[error] || `Error: ${error}`, 'error')
 					window.history.replaceState(
 						{},
 						document.title,
@@ -871,22 +970,17 @@
 				}
 			}
 
-			// Initialize app
 			async function init() {
 				await checkOAuthCallback()
-
-				// Try to restore session
-				const response = await apiRequest('/auth/refresh', 'POST')
-				if (response.ok && response.data.access_token) {
-					currentAccessToken = response.data.access_token
+				const res = await apiRequest('/auth/refresh', 'POST')
+				if (res.ok && res.data.access_token) {
+					currentAccessToken = res.data.access_token
 					await loadUserData()
 					showDashboard()
 				} else {
 					showAuth()
 				}
 			}
-
-			// Start the app
 			init()
 		</script>
 	</body>

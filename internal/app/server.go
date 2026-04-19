@@ -16,20 +16,26 @@ import (
 	"gitlab.com/Uranury/tunescape/internal/analytics"
 	"gitlab.com/Uranury/tunescape/internal/auth"
 	"gitlab.com/Uranury/tunescape/internal/infra"
+	"gitlab.com/Uranury/tunescape/internal/leaderboard"
 	"gitlab.com/Uranury/tunescape/internal/middleware"
+	"gitlab.com/Uranury/tunescape/internal/report"
 	"gitlab.com/Uranury/tunescape/internal/snapshot"
 	"gitlab.com/Uranury/tunescape/internal/spotify"
+	"gitlab.com/Uranury/tunescape/internal/trends"
 )
 
 type Server struct {
-	router           *gin.Engine
-	logger           *slog.Logger
-	httpServer       *http.Server
-	authHandler      *auth.Handler
-	spotifyHandler   *spotify.Handler
-	snapshotHandler  *snapshot.Handler
-	analyticsHandler *analytics.Handler
-	authMiddleware   *middleware.Auth
+	router             *gin.Engine
+	logger             *slog.Logger
+	httpServer         *http.Server
+	authHandler        *auth.Handler
+	spotifyHandler     *spotify.Handler
+	snapshotHandler    *snapshot.Handler
+	analyticsHandler   *analytics.Handler
+	leaderboardHandler *leaderboard.Handler
+	trendsHandler      *trends.Handler
+	reportHandler      *report.Handler
+	authMiddleware     *middleware.Auth
 }
 
 func NewServer(
@@ -38,6 +44,9 @@ func NewServer(
 	spotifyHandler *spotify.Handler,
 	snapshotHandler *snapshot.Handler,
 	analyticsHandler *analytics.Handler,
+	leaderboardHandler *leaderboard.Handler,
+	trendsHandler *trends.Handler,
+	reportHandler *report.Handler,
 	authMiddleware *middleware.Auth,
 ) *Server {
 	router := gin.New()
@@ -54,18 +63,21 @@ func NewServer(
 	)
 
 	server := &Server{
-		router:           router,
-		logger:           deps.Logger,
-		authHandler:      authHandler,
-		spotifyHandler:   spotifyHandler,
-		snapshotHandler:  snapshotHandler,
-		analyticsHandler: analyticsHandler,
-		authMiddleware:   authMiddleware,
+		router:             router,
+		logger:             deps.Logger,
+		authHandler:        authHandler,
+		spotifyHandler:     spotifyHandler,
+		snapshotHandler:    snapshotHandler,
+		analyticsHandler:   analyticsHandler,
+		leaderboardHandler: leaderboardHandler,
+		trendsHandler:      trendsHandler,
+		reportHandler:      reportHandler,
+		authMiddleware:     authMiddleware,
 		httpServer: &http.Server{
 			Addr:         deps.Config.ListenAddr,
 			Handler:      router,
 			ReadTimeout:  10 * time.Second,
-			WriteTimeout: 10 * time.Second,
+			WriteTimeout: 30 * time.Second,
 			IdleTimeout:  60 * time.Second,
 		},
 	}
@@ -86,14 +98,11 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	if s.httpServer == nil {
 		return nil
 	}
-
 	s.logger.Info("Shutting down HTTP server")
-
 	if err := s.httpServer.Shutdown(ctx); err != nil {
 		s.logger.Error("Failed to gracefully shutdown", "error", err)
 		return err
 	}
-
 	s.logger.Info("HTTP server shut down gracefully")
 	return nil
 }
@@ -115,10 +124,14 @@ func (s *Server) registerRoutes() {
 	meGroup := s.router.Group("/me", s.authMiddleware.JWTAuth())
 	{
 		meGroup.POST("/snapshots", s.snapshotHandler.CreateSnapshot)
+		meGroup.GET("/trends", s.trendsHandler.GetTrends)
+		meGroup.GET("/report", s.reportHandler.GetReport)
 	}
 
 	analyticsGroup := s.router.Group("/analytics", s.authMiddleware.JWTAuth())
 	{
 		analyticsGroup.GET("/top-tracks", s.analyticsHandler.GetMusicTaste)
 	}
+
+	s.router.GET("/leaderboards/:feature", s.leaderboardHandler.GetLeaderboard)
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"gitlab.com/Uranury/tunescape/internal/cache"
 	"log"
 	"os"
 	"os/signal"
@@ -13,11 +12,15 @@ import (
 	"gitlab.com/Uranury/tunescape/internal/analytics"
 	"gitlab.com/Uranury/tunescape/internal/app"
 	"gitlab.com/Uranury/tunescape/internal/auth"
+	"gitlab.com/Uranury/tunescape/internal/cache"
 	"gitlab.com/Uranury/tunescape/internal/infra"
+	"gitlab.com/Uranury/tunescape/internal/leaderboard"
 	"gitlab.com/Uranury/tunescape/internal/middleware"
 	"gitlab.com/Uranury/tunescape/internal/reccobeats"
+	"gitlab.com/Uranury/tunescape/internal/report"
 	"gitlab.com/Uranury/tunescape/internal/snapshot"
 	"gitlab.com/Uranury/tunescape/internal/spotify"
+	"gitlab.com/Uranury/tunescape/internal/trends"
 	"gitlab.com/Uranury/tunescape/internal/user"
 	"gitlab.com/Uranury/tunescape/pkg/database"
 )
@@ -47,27 +50,44 @@ func main() {
 	spotifyClient := spotify.NewClient(deps.Config.Spotify, deps.HTTPClient)
 	spotifyRepo := spotify.NewRepository(deps.DBConn)
 	spotifySvc := spotify.NewService(spotifyRepo, userRepo, spotifyClient)
-	spotifyHandler := spotify.NewHandler(
-		spotifySvc,
-		authSvc,
-		deps.Logger,
-		deps.Config.IsProd(),
-		deps.Config.FrontendURL,
-	)
+	spotifyHandler := spotify.NewHandler(spotifySvc, authSvc, deps.Logger, deps.Config.IsProd(), deps.Config.FrontendURL)
 
 	snapshotRepo := snapshot.NewRepository(deps.DBConn)
 	snapshotSvc := snapshot.NewService(snapshotRepo, spotifySvc, txProvider)
 	snapshotHandler := snapshot.NewHandler(snapshotSvc)
 
+	leaderboardStore := leaderboard.NewStore(deps.RedisClient)
+	leaderboardRepo := leaderboard.NewRepository(leaderboardStore, deps.DBConn)
+	leaderboardSvc := leaderboard.NewService(leaderboardRepo)
+	leaderboardHandler := leaderboard.NewHandler(leaderboardSvc)
+
 	reccobeatsClient := reccobeats.NewClient(deps.Config.Reccobeats, deps.HTTPClient)
 	reccobeatsService := reccobeats.NewService(reccobeatsClient)
 	analyticsRepo := analytics.NewRepository(deps.DBConn)
-	analyticsSvc := analytics.NewService(analyticsRepo, reccobeatsService, txProvider, deps.Logger, redisCache)
+	analyticsSvc := analytics.NewService(analyticsRepo, reccobeatsService, txProvider, deps.Logger, redisCache, leaderboardSvc)
 	analyticsHandler := analytics.NewHandler(analyticsSvc)
+
+	trendsRepo := trends.NewRepository(deps.DBConn)
+	trendsSvc := trends.NewService(trendsRepo)
+	trendsHandler := trends.NewHandler(trendsSvc)
+
+	reportRepo := report.NewRepository(deps.DBConn)
+	reportSvc := report.NewService(reportRepo, leaderboardSvc)
+	reportHandler := report.NewHandler(reportSvc)
 
 	authMiddleware := middleware.NewAuth(tokenSvc)
 
-	server := app.NewServer(deps, authHandler, spotifyHandler, snapshotHandler, analyticsHandler, authMiddleware)
+	server := app.NewServer(
+		deps,
+		authHandler,
+		spotifyHandler,
+		snapshotHandler,
+		analyticsHandler,
+		leaderboardHandler,
+		trendsHandler,
+		reportHandler,
+		authMiddleware,
+	)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

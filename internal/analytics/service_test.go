@@ -165,7 +165,6 @@ func anyArgs(n int) []driver.Value {
 	return args
 }
 
-// Success: snapshot found, tracks fetched, audio features upserted, averages returned.
 func TestAnalyticsService_GetMusicTaste_Success(t *testing.T) {
 	t.Parallel()
 
@@ -204,7 +203,7 @@ func TestAnalyticsService_GetMusicTaste_Success(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider, slog.Default(), noopCache())
+	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider, slog.Default(), noopCache(), nil)
 	resp, err := svc.GetMusicTaste(ctx, userID)
 
 	if err != nil {
@@ -228,7 +227,6 @@ func TestAnalyticsService_GetMusicTaste_Success(t *testing.T) {
 	}
 }
 
-// NoSnapshot: GetLatestSnapshotByUserID returns ErrNoSnapshot — propagated as-is.
 func TestAnalyticsService_GetMusicTaste_NoSnapshot(t *testing.T) {
 	t.Parallel()
 
@@ -245,7 +243,7 @@ func TestAnalyticsService_GetMusicTaste_NoSnapshot(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, nil, txProvider, slog.Default(), noopCache())
+	svc := NewService(repo, nil, txProvider, slog.Default(), noopCache(), nil)
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err == nil {
@@ -259,7 +257,6 @@ func TestAnalyticsService_GetMusicTaste_NoSnapshot(t *testing.T) {
 	}
 }
 
-// GetSnapshotError: GetLatestSnapshotByUserID returns an unexpected error — wrapped with "get latest snapshot".
 func TestAnalyticsService_GetMusicTaste_GetSnapshotError(t *testing.T) {
 	t.Parallel()
 
@@ -277,7 +274,7 @@ func TestAnalyticsService_GetMusicTaste_GetSnapshotError(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, nil, txProvider, slog.Default(), noopCache())
+	svc := NewService(repo, nil, txProvider, slog.Default(), noopCache(), nil)
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err == nil {
@@ -294,7 +291,6 @@ func TestAnalyticsService_GetMusicTaste_GetSnapshotError(t *testing.T) {
 	}
 }
 
-// GetTracksError: GetTracksBySnapshotID fails — transaction must not be started.
 func TestAnalyticsService_GetMusicTaste_GetTracksError(t *testing.T) {
 	t.Parallel()
 
@@ -316,7 +312,7 @@ func TestAnalyticsService_GetMusicTaste_GetTracksError(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, nil, txProvider, slog.Default(), noopCache())
+	svc := NewService(repo, nil, txProvider, slog.Default(), noopCache(), nil)
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err == nil {
@@ -336,7 +332,6 @@ func TestAnalyticsService_GetMusicTaste_GetTracksError(t *testing.T) {
 	}
 }
 
-// ReccobeatsError: GetAudioFeaturesBatch fails — transaction is rolled back, GetAverages not called.
 func TestAnalyticsService_GetMusicTaste_ReccobeatsError(t *testing.T) {
 	t.Parallel()
 
@@ -374,7 +369,7 @@ func TestAnalyticsService_GetMusicTaste_ReccobeatsError(t *testing.T) {
 		}, nil
 	}))
 
-	svc := NewService(repo, reccobeatsService, txProvider, slog.Default(), noopCache())
+	svc := NewService(repo, reccobeatsService, txProvider, slog.Default(), noopCache(), nil)
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err == nil {
@@ -391,7 +386,6 @@ func TestAnalyticsService_GetMusicTaste_ReccobeatsError(t *testing.T) {
 	}
 }
 
-// UpsertAudioFeaturesError: BulkUpsertAudioFeatures fails — transaction is rolled back, GetAverages not called.
 func TestAnalyticsService_GetMusicTaste_UpsertAudioFeaturesError(t *testing.T) {
 	t.Parallel()
 
@@ -421,7 +415,7 @@ func TestAnalyticsService_GetMusicTaste_UpsertAudioFeaturesError(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider, slog.Default(), noopCache())
+	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider, slog.Default(), noopCache(), nil)
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err == nil {
@@ -441,7 +435,6 @@ func TestAnalyticsService_GetMusicTaste_UpsertAudioFeaturesError(t *testing.T) {
 	}
 }
 
-// GetAveragesError: GetAveragesBySnapshotID fails after a successful transaction.
 func TestAnalyticsService_GetMusicTaste_GetAveragesError(t *testing.T) {
 	t.Parallel()
 
@@ -470,7 +463,7 @@ func TestAnalyticsService_GetMusicTaste_GetAveragesError(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider, slog.Default(), noopCache())
+	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider, slog.Default(), noopCache(), nil)
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err == nil {
@@ -490,7 +483,6 @@ func TestAnalyticsService_GetMusicTaste_GetAveragesError(t *testing.T) {
 	}
 }
 
-// BatchPagination: tracks count exceeds audioFeaturesBatchSize — two HTTP requests are made (40 + 5).
 func TestAnalyticsService_GetMusicTaste_BatchPagination(t *testing.T) {
 	t.Parallel()
 
@@ -513,12 +505,10 @@ func TestAnalyticsService_GetMusicTaste_BatchPagination(t *testing.T) {
 	transport := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 		start := httpCallCount * audioFeaturesBatchSize
 		httpCallCount++
-
 		batch := tracks[start:]
 		if len(batch) > audioFeaturesBatchSize {
 			batch = batch[:audioFeaturesBatchSize]
 		}
-
 		features := makeAudioFeaturesResponse(batch)
 		body, _ := json.Marshal(map[string]any{"content": features})
 		return &http.Response{
@@ -541,7 +531,7 @@ func TestAnalyticsService_GetMusicTaste_BatchPagination(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, newReccobeatsService(transport), txProvider, slog.Default(), noopCache())
+	svc := NewService(repo, newReccobeatsService(transport), txProvider, slog.Default(), noopCache(), nil)
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err != nil {
@@ -559,7 +549,6 @@ func TestAnalyticsService_GetMusicTaste_BatchPagination(t *testing.T) {
 	}
 }
 
-// UnknownSpotifyID: Reccobeats returns a feature with an href that does not match any track — silently skipped.
 func TestAnalyticsService_GetMusicTaste_UnknownSpotifyID(t *testing.T) {
 	t.Parallel()
 
@@ -592,7 +581,7 @@ func TestAnalyticsService_GetMusicTaste_UnknownSpotifyID(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider, slog.Default(), noopCache())
+	svc := NewService(repo, newReccobeatsService(reccobeatsOKTransport(t, features)), txProvider, slog.Default(), noopCache(), nil)
 	resp, err := svc.GetMusicTaste(ctx, uuid.New())
 
 	if err != nil {
@@ -606,7 +595,6 @@ func TestAnalyticsService_GetMusicTaste_UnknownSpotifyID(t *testing.T) {
 	}
 }
 
-// CacheHit: valid cached response is returned immediately — no DB or ReccoBeats calls made.
 func TestAnalyticsService_GetMusicTaste_CacheHit(t *testing.T) {
 	t.Parallel()
 
@@ -646,7 +634,7 @@ func TestAnalyticsService_GetMusicTaste_CacheHit(t *testing.T) {
 	}
 
 	_, txProvider := newDB(t)
-	svc := NewService(repo, nil, txProvider, slog.Default(), c)
+	svc := NewService(repo, nil, txProvider, slog.Default(), c, nil)
 	resp, err := svc.GetMusicTaste(ctx, userID)
 
 	if err != nil {

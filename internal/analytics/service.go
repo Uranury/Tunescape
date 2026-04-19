@@ -19,6 +19,10 @@ import (
 
 const audioFeaturesBatchSize = 40
 
+type ScorePusher interface {
+	PushScore(ctx context.Context, feature, userID string, score float64) error
+}
+
 type Service interface {
 	GetMusicTaste(ctx context.Context, userID uuid.UUID) (*MusicTasteResponse, error)
 }
@@ -29,6 +33,7 @@ type service struct {
 	txProvider        database.TxProvider
 	logger            *slog.Logger
 	cache             cache.Cache
+	scorePusher       ScorePusher
 }
 
 func NewService(
@@ -37,6 +42,7 @@ func NewService(
 	txProvider database.TxProvider,
 	logger *slog.Logger,
 	cache cache.Cache,
+	scorePusher ScorePusher,
 ) Service {
 	return &service{
 		repo:              repo,
@@ -44,6 +50,7 @@ func NewService(
 		txProvider:        txProvider,
 		logger:            logger,
 		cache:             cache,
+		scorePusher:       scorePusher,
 	}
 }
 
@@ -71,10 +78,6 @@ func (s *service) GetMusicTaste(ctx context.Context, userID uuid.UUID) (*MusicTa
 		return nil, fmt.Errorf("get snapshot tracks: %w", err)
 	}
 
-	// Build a lookup map so features can be matched by Spotify ID, not by
-	// positional index. The Reccobeats response includes an href field of the
-	// form "https://open.spotify.com/track/<spotifyID>" which is the only
-	// reliable per-item identifier the API returns.
 	trackBySpotifyID := make(map[string]track.Track, len(tracks))
 	for _, t := range tracks {
 		trackBySpotifyID[t.SpotifyID] = t
@@ -142,10 +145,23 @@ func (s *service) GetMusicTaste(ctx context.Context, userID uuid.UUID) (*MusicTa
 		Averages:    *avgs,
 	}
 
+	if s.scorePusher != nil {
+		for feature, score := range map[string]float64{
+			"valence":      avgs.Valence,
+			"energy":       avgs.Energy,
+			"danceability": avgs.Danceability,
+			"acousticness": avgs.Acousticness,
+		} {
+			if pushErr := s.scorePusher.PushScore(ctx, feature, userID.String(), score); pushErr != nil {
+				s.logger.Warn("failed to push leaderboard score", "feature", feature, "error", pushErr)
+			}
+		}
+	}
+
 	resultBytes, err := json.Marshal(result)
 	if err == nil {
-		if err := s.cache.Set(ctx, "music_taste:"+userID.String(), resultBytes, time.Hour*24); err != nil {
-			s.logger.Warn("failed to cache music_taste", "error", err)
+		if cacheErr := s.cache.Set(ctx, "music_taste:"+userID.String(), resultBytes, time.Hour*24); cacheErr != nil {
+			s.logger.Warn("failed to cache music_taste", "error", cacheErr)
 		}
 	} else {
 		s.logger.Warn("failed to marshal music_taste", "error", err)
