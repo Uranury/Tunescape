@@ -53,12 +53,11 @@ func main() {
 	spotifyHandler := spotify.NewHandler(spotifySvc, authSvc, deps.Logger, deps.Config.IsProd(), deps.Config.FrontendURL)
 
 	snapshotRepo := snapshot.NewRepository(deps.DBConn)
-	snapshotSvc := snapshot.NewService(snapshotRepo, spotifySvc, txProvider)
+	snapshotSvc := snapshot.NewService(snapshotRepo, spotifySvc, txProvider, redisCache, deps.Logger)
 	snapshotHandler := snapshot.NewHandler(snapshotSvc)
 
 	leaderboardStore := leaderboard.NewStore(deps.RedisClient)
-	leaderboardRepo := leaderboard.NewRepository(leaderboardStore, deps.DBConn)
-	leaderboardSvc := leaderboard.NewService(leaderboardRepo)
+	leaderboardSvc := leaderboard.NewService(leaderboardStore, userRepo)
 	leaderboardHandler := leaderboard.NewHandler(leaderboardSvc)
 
 	reccobeatsClient := reccobeats.NewClient(deps.Config.Reccobeats, deps.HTTPClient)
@@ -72,7 +71,7 @@ func main() {
 	trendsHandler := trends.NewHandler(trendsSvc)
 
 	reportRepo := report.NewRepository(deps.DBConn)
-	reportSvc := report.NewService(reportRepo, leaderboardSvc)
+	reportSvc := report.NewService(reportRepo, leaderboardSvc, userRepo)
 	reportHandler := report.NewHandler(reportSvc)
 
 	authMiddleware := middleware.NewAuth(tokenSvc)

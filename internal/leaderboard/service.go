@@ -3,6 +3,8 @@ package leaderboard
 import (
 	"context"
 	"fmt"
+
+	"gitlab.com/Uranury/tunescape/internal/user"
 )
 
 var validFeatures = map[string]bool{
@@ -19,18 +21,19 @@ type Service interface {
 }
 
 type service struct {
-	repo Repository
+	store    LeaderboardStore
+	userRepo user.Repository
 }
 
-func NewService(repo Repository) Service {
-	return &service{repo: repo}
+func NewService(store LeaderboardStore, userRepo user.Repository) Service {
+	return &service{store: store, userRepo: userRepo}
 }
 
 func (s *service) PushScore(ctx context.Context, feature, userID string, score float64) error {
 	if !validFeatures[feature] {
 		return fmt.Errorf("invalid feature: %s", feature)
 	}
-	return s.repo.PushScore(ctx, feature, userID, score)
+	return s.store.ZAdd(ctx, fmt.Sprintf("leaderboard:%s", feature), score, userID)
 }
 
 func (s *service) GetLeaderboard(ctx context.Context, feature string, limit int64) (*LeaderboardResponse, error) {
@@ -40,7 +43,7 @@ func (s *service) GetLeaderboard(ctx context.Context, feature string, limit int6
 	if limit <= 0 || limit > 100 {
 		limit = 10
 	}
-	entries, err := s.repo.GetTopN(ctx, feature, limit)
+	entries, err := s.store.ZRevRangeWithScores(ctx, fmt.Sprintf("leaderboard:%s", feature), 0, limit-1)
 	if err != nil {
 		return nil, fmt.Errorf("get top n: %w", err)
 	}
@@ -48,7 +51,7 @@ func (s *service) GetLeaderboard(ctx context.Context, feature string, limit int6
 	for i, e := range entries {
 		userIDs[i] = fmt.Sprintf("%v", e.Member)
 	}
-	names, err := s.repo.ResolveDisplayNames(ctx, userIDs)
+	names, err := s.userRepo.FindDisplayNamesByIDs(ctx, userIDs)
 	if err != nil {
 		return nil, fmt.Errorf("resolve display names: %w", err)
 	}
@@ -71,11 +74,11 @@ func (s *service) GetLeaderboard(ctx context.Context, feature string, limit int6
 func (s *service) GetUserRankings(ctx context.Context, userID string) (*UserRankings, error) {
 	rankings := &UserRankings{}
 	for _, feature := range []string{"valence", "energy", "danceability", "acousticness"} {
-		rank, err := s.repo.GetUserRank(ctx, feature, userID)
+		rank, err := s.store.ZRevRank(ctx, fmt.Sprintf("leaderboard:%s", feature), userID)
 		if err != nil {
 			continue
 		}
-		r := rank
+		r := rank + 1
 		switch feature {
 		case "valence":
 			rankings.Valence = &r

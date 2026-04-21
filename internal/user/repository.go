@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 
 	"github.com/google/uuid"
@@ -14,6 +15,8 @@ type Repository interface {
 	ConnectSpotify(ctx context.Context, userID uuid.UUID, spotifyID *string, avatarURL, country, product *string) error
 	Create(ctx context.Context, u *User) error
 	FindByEmail(ctx context.Context, email string) (*User, error)
+	FindDisplayName(ctx context.Context, userID uuid.UUID) (string, error)
+	FindDisplayNamesByIDs(ctx context.Context, userIDs []string) (map[string]string, error)
 }
 
 type repository struct {
@@ -68,4 +71,35 @@ func (r *repository) FindByEmail(ctx context.Context, email string) (*User, erro
 	u := &User{}
 	err := r.exec.QueryRowxContext(ctx, query, email).StructScan(u)
 	return u, err
+}
+
+func (r *repository) FindDisplayName(ctx context.Context, userID uuid.UUID) (string, error) {
+	var name string
+	err := r.exec.QueryRowxContext(ctx, `SELECT display_name FROM users WHERE id = $1 AND is_deleted = FALSE`, userID).Scan(&name)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", apperrors.ErrNotFound
+		}
+		return "", err
+	}
+	return name, nil
+}
+
+func (r *repository) FindDisplayNamesByIDs(ctx context.Context, userIDs []string) (map[string]string, error) {
+	if len(userIDs) == 0 {
+		return map[string]string{}, nil
+	}
+	query := `SELECT id::text AS id, display_name FROM users WHERE id::text = ANY($1)`
+	var rows []struct {
+		ID          string `db:"id"`
+		DisplayName string `db:"display_name"`
+	}
+	if err := r.exec.SelectContext(ctx, &rows, query, pq.Array(userIDs)); err != nil {
+		return nil, err
+	}
+	result := make(map[string]string, len(rows))
+	for _, row := range rows {
+		result[row.ID] = row.DisplayName
+	}
+	return result, nil
 }
