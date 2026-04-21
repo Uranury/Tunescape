@@ -46,6 +46,12 @@ func (m *mockUserRepo) Create(ctx context.Context, u *user.User) error { return 
 func (m *mockUserRepo) FindByEmail(ctx context.Context, email string) (*user.User, error) {
 	return m.findByEmailFn(ctx, email)
 }
+func (m *mockUserRepo) FindDisplayName(_ context.Context, _ uuid.UUID) (string, error) {
+	return "", nil
+}
+func (m *mockUserRepo) FindDisplayNamesByIDs(_ context.Context, _ []string) (map[string]string, error) {
+	return map[string]string{}, nil
+}
 
 type roundTripperFunc func(req *http.Request) (*http.Response, error)
 

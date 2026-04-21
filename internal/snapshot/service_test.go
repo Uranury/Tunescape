@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"testing"
 	"time"
@@ -15,6 +16,13 @@ import (
 	"gitlab.com/Uranury/tunescape/internal/track"
 	"gitlab.com/Uranury/tunescape/pkg/database"
 )
+
+type mockCache struct{}
+
+func (m *mockCache) Get(_ context.Context, _ string) ([]byte, error)             { return nil, nil }
+func (m *mockCache) Set(_ context.Context, _ string, _ []byte, _ time.Duration) error { return nil }
+func (m *mockCache) Delete(_ context.Context, _ string) error                    { return nil }
+func (m *mockCache) Exists(_ context.Context, _ string) (bool, error)           { return false, nil }
 
 type mockSpotifyService struct {
 	getTopTracksFn func(ctx context.Context, userID uuid.UUID, limit int) ([]track.Track, error)
@@ -101,7 +109,7 @@ func TestSnapshotService_CreateSnapshot_Success(t *testing.T) {
 		},
 	}
 
-	svc := NewService(nil, spotifySvc, txProvider)
+	svc := NewService(nil, spotifySvc, txProvider, &mockCache{}, slog.Default())
 	snap, err := svc.CreateSnapshot(ctx, userID)
 
 	if err != nil {
@@ -162,7 +170,7 @@ func TestSnapshotService_CreateSnapshot_EmptyTracks(t *testing.T) {
 		},
 	}
 
-	svc := NewService(nil, spotifySvc, txProvider)
+	svc := NewService(nil, spotifySvc, txProvider, &mockCache{}, slog.Default())
 	snap, err := svc.CreateSnapshot(ctx, userID)
 
 	if err != nil {
@@ -202,7 +210,7 @@ func TestSnapshotService_CreateSnapshot_SpotifyError(t *testing.T) {
 		},
 	}
 
-	svc := NewService(nil, spotifySvc, txProvider)
+	svc := NewService(nil, spotifySvc, txProvider, &mockCache{}, slog.Default())
 	snap, err := svc.CreateSnapshot(ctx, uuid.New())
 
 	if err == nil {
@@ -249,7 +257,7 @@ func TestSnapshotService_CreateSnapshot_InsertSnapshotError(t *testing.T) {
 		},
 	}
 
-	svc := NewService(nil, spotifySvc, txProvider)
+	svc := NewService(nil, spotifySvc, txProvider, &mockCache{}, slog.Default())
 	snap, err := svc.CreateSnapshot(ctx, uuid.New())
 
 	if err == nil {
@@ -302,7 +310,7 @@ func TestSnapshotService_CreateSnapshot_UpsertTrackError(t *testing.T) {
 		},
 	}
 
-	svc := NewService(nil, spotifySvc, txProvider)
+	svc := NewService(nil, spotifySvc, txProvider, &mockCache{}, slog.Default())
 	snap, err := svc.CreateSnapshot(ctx, uuid.New())
 
 	if err == nil {
@@ -359,7 +367,7 @@ func TestSnapshotService_CreateSnapshot_LinkTrackError(t *testing.T) {
 		},
 	}
 
-	svc := NewService(nil, spotifySvc, txProvider)
+	svc := NewService(nil, spotifySvc, txProvider, &mockCache{}, slog.Default())
 	snap, err := svc.CreateSnapshot(ctx, uuid.New())
 
 	if err == nil {

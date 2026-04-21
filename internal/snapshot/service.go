@@ -3,8 +3,10 @@ package snapshot
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/google/uuid"
+	"gitlab.com/Uranury/tunescape/internal/cache"
 	"gitlab.com/Uranury/tunescape/internal/spotify"
 	"gitlab.com/Uranury/tunescape/internal/track"
 	"gitlab.com/Uranury/tunescape/pkg/database"
@@ -20,17 +22,23 @@ type service struct {
 	repo       Repository
 	spotifySvc spotify.Service
 	txProvider database.TxProvider
+	cache      cache.Cache
+	logger     *slog.Logger
 }
 
 func NewService(
 	repo Repository,
 	spotifySvc spotify.Service,
 	txProvider database.TxProvider,
+	cache cache.Cache,
+	logger *slog.Logger,
 ) Service {
 	return &service{
 		repo:       repo,
 		spotifySvc: spotifySvc,
 		txProvider: txProvider,
+		cache:      cache,
+		logger:     logger,
 	}
 }
 
@@ -72,6 +80,10 @@ func (s *service) CreateSnapshot(ctx context.Context, userID uuid.UUID) (*Snapsh
 
 	if err != nil {
 		return nil, err
+	}
+
+	if err := s.cache.Delete(ctx, "music_taste:"+userID.String()); err != nil {
+		s.logger.Warn("failed to invalidate music_taste cache after snapshot creation", "user_id", userID, "error", err)
 	}
 
 	return result, nil

@@ -10,6 +10,7 @@ import (
 
 	"gitlab.com/Uranury/tunescape/internal/leaderboard"
 	"gitlab.com/Uranury/tunescape/internal/track"
+	"gitlab.com/Uranury/tunescape/internal/user"
 )
 
 type Service interface {
@@ -18,15 +19,16 @@ type Service interface {
 
 type service struct {
 	repo           Repository
+	userRepo       user.Repository
 	leaderboardSvc leaderboard.Service
 }
 
-func NewService(repo Repository, leaderboardSvc leaderboard.Service) Service {
-	return &service{repo: repo, leaderboardSvc: leaderboardSvc}
+func NewService(repo Repository, leaderboardSvc leaderboard.Service, userRepo user.Repository) Service {
+	return &service{repo: repo, userRepo: userRepo, leaderboardSvc: leaderboardSvc}
 }
 
 func (s *service) GenerateReport(ctx context.Context, userID uuid.UUID) ([]byte, error) {
-	name, err := s.repo.GetUserDisplayName(ctx, userID)
+	name, err := s.userRepo.FindDisplayName(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
