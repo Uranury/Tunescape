@@ -36,11 +36,14 @@ func (h *Handler) CreateSnapshot(c *gin.Context) {
 
 	snap, err := h.svc.CreateSnapshot(c.Request.Context(), userID)
 	if err != nil {
-		if errors.Is(err, apperrors.ErrSpotifyNotConnected) {
+		switch {
+		case errors.Is(err, apperrors.ErrSpotifyNotConnected):
 			apperrors.GenHTTPError(c, http.StatusUnprocessableEntity, apperrors.ErrSpotifyNotConnected.Error(), nil)
-			return
+		case errors.Is(err, apperrors.ErrUpstreamUnavailable):
+			apperrors.GenHTTPError(c, http.StatusBadGateway, "Spotify is temporarily unavailable, please try again", nil)
+		default:
+			apperrors.GenHTTPError(c, http.StatusInternalServerError, "failed to create snapshot", nil)
 		}
-		apperrors.GenHTTPError(c, http.StatusInternalServerError, "failed to create snapshot", nil)
 		return
 	}
 

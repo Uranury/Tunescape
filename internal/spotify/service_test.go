@@ -46,6 +46,9 @@ func (m *mockUserRepo) Create(ctx context.Context, u *user.User) error { return 
 func (m *mockUserRepo) FindByEmail(ctx context.Context, email string) (*user.User, error) {
 	return m.findByEmailFn(ctx, email)
 }
+func (m *mockUserRepo) FindByID(_ context.Context, _ uuid.UUID) (*user.User, error) {
+	return nil, nil
+}
 func (m *mockUserRepo) FindDisplayName(_ context.Context, _ uuid.UUID) (string, error) {
 	return "", nil
 }

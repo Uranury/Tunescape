@@ -45,6 +45,7 @@ func NewService(
 func (s *service) CreateSnapshot(ctx context.Context, userID uuid.UUID) (*Snapshot, error) {
 	topTracks, err := s.spotifySvc.GetTopTracks(ctx, userID, topTracksLimit)
 	if err != nil {
+		s.logger.Error("failed to fetch top tracks from spotify", "user_id", userID, "error", err)
 		return nil, fmt.Errorf("fetch top tracks from spotify: %w", err)
 	}
 
@@ -56,11 +57,13 @@ func (s *service) CreateSnapshot(ctx context.Context, userID uuid.UUID) (*Snapsh
 
 		snap := &Snapshot{UserID: userID}
 		if err := snapRepo.CreateSnapshot(ctx, snap); err != nil {
+			s.logger.Error("failed to insert snapshot", "user_id", userID, "error", err)
 			return fmt.Errorf("create snapshot: %w", err)
 		}
 
 		for i := range topTracks {
 			if err := trackRepo.Upsert(ctx, &topTracks[i]); err != nil {
+				s.logger.Error("failed to upsert track", "user_id", userID, "spotify_id", topTracks[i].SpotifyID, "error", err)
 				return fmt.Errorf("upsert track %q: %w", topTracks[i].SpotifyID, err)
 			}
 
@@ -69,6 +72,7 @@ func (s *service) CreateSnapshot(ctx context.Context, userID uuid.UUID) (*Snapsh
 				TrackID:    topTracks[i].ID,
 				Position:   i + 1,
 			}); err != nil {
+				s.logger.Error("failed to link track to snapshot", "user_id", userID, "spotify_id", topTracks[i].SpotifyID, "error", err)
 				return fmt.Errorf("link track %q to snapshot: %w", topTracks[i].SpotifyID, err)
 			}
 		}

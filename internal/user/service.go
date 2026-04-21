@@ -5,14 +5,23 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"gitlab.com/Uranury/tunescape/pkg/apperrors"
 
+	"github.com/google/uuid"
+	"gitlab.com/Uranury/tunescape/pkg/apperrors"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type ProfileResponse struct {
+	DisplayName      string  `json:"display_name"`
+	Email            string  `json:"email"`
+	AvatarURL        *string `json:"avatar_url"`
+	SpotifyConnected bool    `json:"spotify_connected"`
+}
 
 type Service interface {
 	ValidateCredentials(ctx context.Context, email, password string) (*User, error)
 	Create(ctx context.Context, email, password, displayName string) (*User, error)
+	GetProfile(ctx context.Context, userID uuid.UUID) (*ProfileResponse, error)
 }
 
 type service struct {
@@ -57,4 +66,17 @@ func (s *service) Create(ctx context.Context, email, password, displayName strin
 	}
 
 	return u, nil
+}
+
+func (s *service) GetProfile(ctx context.Context, userID uuid.UUID) (*ProfileResponse, error) {
+	u, err := s.repo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &ProfileResponse{
+		DisplayName:      u.DisplayName,
+		Email:            u.Email,
+		AvatarURL:        u.AvatarURL,
+		SpotifyConnected: u.SpotifyID != nil,
+	}, nil
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"gitlab.com/Uranury/tunescape/pkg/apperrors"
 	"gitlab.com/Uranury/tunescape/pkg/config"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/spotify"
@@ -99,6 +100,9 @@ func (c *Client) GetTopTracks(ctx context.Context, accessToken string, limit int
 	}()
 
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode >= 500 || resp.StatusCode == http.StatusTooManyRequests {
+			return nil, fmt.Errorf("spotify /me/top/tracks returned %d: %w", resp.StatusCode, apperrors.ErrUpstreamUnavailable)
+		}
 		return nil, fmt.Errorf("spotify /me/top/tracks returned %d", resp.StatusCode)
 	}
 

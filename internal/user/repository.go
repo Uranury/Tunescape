@@ -15,6 +15,7 @@ type Repository interface {
 	ConnectSpotify(ctx context.Context, userID uuid.UUID, spotifyID *string, avatarURL, country, product *string) error
 	Create(ctx context.Context, u *User) error
 	FindByEmail(ctx context.Context, email string) (*User, error)
+	FindByID(ctx context.Context, userID uuid.UUID) (*User, error)
 	FindDisplayName(ctx context.Context, userID uuid.UUID) (string, error)
 	FindDisplayNamesByIDs(ctx context.Context, userIDs []string) (map[string]string, error)
 }
@@ -71,6 +72,19 @@ func (r *repository) FindByEmail(ctx context.Context, email string) (*User, erro
 	u := &User{}
 	err := r.exec.QueryRowxContext(ctx, query, email).StructScan(u)
 	return u, err
+}
+
+func (r *repository) FindByID(ctx context.Context, userID uuid.UUID) (*User, error) {
+	query := `SELECT * FROM users WHERE id = $1 AND is_deleted = FALSE`
+	u := &User{}
+	err := r.exec.QueryRowxContext(ctx, query, userID).StructScan(u)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, apperrors.ErrNotFound
+		}
+		return nil, err
+	}
+	return u, nil
 }
 
 func (r *repository) FindDisplayName(ctx context.Context, userID uuid.UUID) (string, error) {

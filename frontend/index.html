@@ -678,27 +678,26 @@
 			}
 
 			async function loadUserData() {
-				const res = await apiRequest('/auth/refresh', 'POST', null, true)
-				if (res.ok && res.data.access_token) {
-					currentAccessToken = res.data.access_token
-					// Check Spotify connection by trying to create a snapshot
-					const test = await apiRequest('/me/snapshots', 'POST', null, true)
-					const spotifyStatus = document.getElementById('spotify-status')
-					const connectCard = document.getElementById('spotify-connect-card')
-					if (test.status === 422) {
-						spotifyStatus.className = 'spotify-status spotify-disconnected'
-						spotifyStatus.innerHTML = '🔴 Spotify not connected'
-						connectCard.style.display = 'block'
-						document.getElementById('tracks-section').style.display = 'none'
-					} else if (test.ok) {
-						spotifyStatus.className = 'spotify-status spotify-connected'
-						spotifyStatus.innerHTML = '🟢 Spotify connected'
-						connectCard.style.display = 'none'
-						await loadTopTracks()
-					}
-					document.getElementById('user-name').textContent = 'Music Explorer'
-					document.getElementById('user-email').textContent =
-						'Connected to Tunescape'
+				const res = await apiRequest('/me/profile', 'GET', null, true)
+				if (!res.ok) return
+
+				const profile = res.data
+				const spotifyStatus = document.getElementById('spotify-status')
+				const connectCard = document.getElementById('spotify-connect-card')
+
+				document.getElementById('user-name').textContent = profile.display_name
+				document.getElementById('user-email').textContent = profile.email
+
+				if (profile.spotify_connected) {
+					spotifyStatus.className = 'spotify-status spotify-connected'
+					spotifyStatus.innerHTML = '🟢 Spotify connected'
+					connectCard.style.display = 'none'
+					await loadTopTracks()
+				} else {
+					spotifyStatus.className = 'spotify-status spotify-disconnected'
+					spotifyStatus.innerHTML = '🔴 Spotify not connected'
+					connectCard.style.display = 'block'
+					document.getElementById('tracks-section').style.display = 'none'
 				}
 			}
 
@@ -711,6 +710,8 @@
 				else if (res.status === 401) {
 					showAlert('Session expired', 'error')
 					logout()
+				} else if (res.status === 502) {
+					showAlert('Spotify is temporarily unavailable. Please try again in a moment.', 'error')
 				} else showAlert('Failed to load tracks', 'error')
 			}
 
@@ -944,7 +945,7 @@
 				const error = params.get('error')
 				if (connected === '1') {
 					showAlert(
-						'✅ Spotify connected! Click Refresh to see top tracks.',
+						'✅ Spotify connected! Loading your tracks...',
 						'success',
 					)
 					window.history.replaceState(
@@ -952,7 +953,6 @@
 						document.title,
 						window.location.pathname,
 					)
-					await loadUserData()
 				} else if (error) {
 					const msgs = {
 						not_logged_in: 'Please login first.',
@@ -971,10 +971,10 @@
 			}
 
 			async function init() {
-				await checkOAuthCallback()
 				const res = await apiRequest('/auth/refresh', 'POST')
 				if (res.ok && res.data.access_token) {
 					currentAccessToken = res.data.access_token
+					await checkOAuthCallback()
 					await loadUserData()
 					showDashboard()
 				} else {

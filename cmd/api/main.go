@@ -41,6 +41,7 @@ func main() {
 
 	userRepo := user.NewRepository(deps.DBConn)
 	userSvc := user.NewService(userRepo)
+	userHandler := user.NewHandler(userSvc)
 
 	authRepo := auth.NewRepository(deps.DBConn)
 	tokenSvc := auth.NewTokenService([]byte(deps.Config.JWTKey), deps.Logger)
@@ -85,6 +86,7 @@ func main() {
 		leaderboardHandler,
 		trendsHandler,
 		reportHandler,
+		userHandler,
 		authMiddleware,
 	)
 

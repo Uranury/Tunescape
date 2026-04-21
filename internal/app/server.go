@@ -22,6 +22,7 @@ import (
 	"gitlab.com/Uranury/tunescape/internal/snapshot"
 	"gitlab.com/Uranury/tunescape/internal/spotify"
 	"gitlab.com/Uranury/tunescape/internal/trends"
+	"gitlab.com/Uranury/tunescape/internal/user"
 )
 
 type Server struct {
@@ -35,6 +36,7 @@ type Server struct {
 	leaderboardHandler *leaderboard.Handler
 	trendsHandler      *trends.Handler
 	reportHandler      *report.Handler
+	userHandler        *user.Handler
 	authMiddleware     *middleware.Auth
 }
 
@@ -47,6 +49,7 @@ func NewServer(
 	leaderboardHandler *leaderboard.Handler,
 	trendsHandler *trends.Handler,
 	reportHandler *report.Handler,
+	userHandler *user.Handler,
 	authMiddleware *middleware.Auth,
 ) *Server {
 	router := gin.New()
@@ -72,6 +75,7 @@ func NewServer(
 		leaderboardHandler: leaderboardHandler,
 		trendsHandler:      trendsHandler,
 		reportHandler:      reportHandler,
+		userHandler:        userHandler,
 		authMiddleware:     authMiddleware,
 		httpServer: &http.Server{
 			Addr:         deps.Config.ListenAddr,
@@ -123,6 +127,7 @@ func (s *Server) registerRoutes() {
 
 	meGroup := s.router.Group("/me", s.authMiddleware.JWTAuth())
 	{
+		meGroup.GET("/profile", s.userHandler.GetProfile)
 		meGroup.POST("/snapshots", s.snapshotHandler.CreateSnapshot)
 		meGroup.GET("/trends", s.trendsHandler.GetTrends)
 		meGroup.GET("/report", s.reportHandler.GetReport)

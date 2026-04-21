@@ -11,5 +11,6 @@ var (
 	ErrInvalidCredentials  = errors.New("invalid credentials")
 	ErrSpotifyIDTaken      = errors.New("spotify account already linked to another user")
 	ErrSpotifyNotConnected = errors.New("spotify account not connected")
-	ErrNoSnapshot          = errors.New("no snapshot found for user")
+	ErrNoSnapshot            = errors.New("no snapshot found for user")
+	ErrUpstreamUnavailable   = errors.New("upstream service unavailable")
 )
