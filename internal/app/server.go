@@ -38,6 +38,7 @@ type Server struct {
 	reportHandler      *report.Handler
 	userHandler        *user.Handler
 	authMiddleware     *middleware.Auth
+	rateLimiter        *middleware.RateLimiter
 }
 
 func NewServer(
@@ -51,6 +52,7 @@ func NewServer(
 	reportHandler *report.Handler,
 	userHandler *user.Handler,
 	authMiddleware *middleware.Auth,
+	rateLimiter *middleware.RateLimiter,
 ) *Server {
 	router := gin.New()
 	router.Use(
@@ -77,6 +79,7 @@ func NewServer(
 		reportHandler:      reportHandler,
 		userHandler:        userHandler,
 		authMiddleware:     authMiddleware,
+		rateLimiter:        rateLimiter,
 		httpServer: &http.Server{
 			Addr:         deps.Config.ListenAddr,
 			Handler:      router,
@@ -139,5 +142,5 @@ func (s *Server) registerRoutes() {
 		analyticsGroup.GET("/top-tracks", s.analyticsHandler.GetMusicTaste)
 	}
 
-	s.router.GET("/leaderboards/:feature", s.leaderboardHandler.GetLeaderboard)
+	s.router.GET("/leaderboards/:feature", s.rateLimiter.PerIP(), s.leaderboardHandler.GetLeaderboard)
 }

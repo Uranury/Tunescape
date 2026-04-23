@@ -22,7 +22,11 @@ func (h *Handler) GetLeaderboard(c *gin.Context) {
 	if err != nil || limit <= 0 {
 		limit = 10
 	}
-	result, err := h.svc.GetLeaderboard(c.Request.Context(), feature, limit)
+	offset, err := strconv.ParseInt(c.DefaultQuery("offset", "0"), 10, 64)
+	if err != nil || offset < 0 {
+		offset = 0
+	}
+	result, err := h.svc.GetLeaderboard(c.Request.Context(), feature, limit, offset)
 	if err != nil {
 		apperrors.GenHTTPError(c, http.StatusBadRequest, err.Error(), nil)
 		return

@@ -58,7 +58,7 @@ func main() {
 	snapshotHandler := snapshot.NewHandler(snapshotSvc)
 
 	leaderboardStore := leaderboard.NewStore(deps.RedisClient)
-	leaderboardSvc := leaderboard.NewService(leaderboardStore, userRepo)
+	leaderboardSvc := leaderboard.NewService(leaderboardStore, userRepo, redisCache)
 	leaderboardHandler := leaderboard.NewHandler(leaderboardSvc)
 
 	reccobeatsClient := reccobeats.NewClient(deps.Config.Reccobeats, deps.HTTPClient)
@@ -76,6 +76,7 @@ func main() {
 	reportHandler := report.NewHandler(reportSvc)
 
 	authMiddleware := middleware.NewAuth(tokenSvc)
+	rateLimiter := middleware.NewRateLimiter(deps.RedisClient, 60, time.Minute)
 
 	server := app.NewServer(
 		deps,
@@ -88,6 +89,7 @@ func main() {
 		reportHandler,
 		userHandler,
 		authMiddleware,
+		rateLimiter,
 	)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
