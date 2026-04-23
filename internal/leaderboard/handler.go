@@ -16,6 +16,16 @@ func NewHandler(svc Service) *Handler {
 	return &Handler{svc: svc}
 }
 
+// @Summary      Get global leaderboard
+// @Description  Returns the top-ranked users for a given audio feature. Valid features: valence, energy, danceability, acousticness.
+// @Tags         leaderboards
+// @Produce      json
+// @Param        feature  path   string  true   "Audio feature"  Enums(valence, energy, danceability, acousticness)
+// @Param        limit    query  int     false  "Number of entries to return (default 10)"
+// @Param        offset   query  int     false  "Number of entries to skip (default 0)"
+// @Success      200  {object}  LeaderboardResponse
+// @Failure      400  {object}  apperrors.HTTPError  "Invalid feature"
+// @Router       /leaderboards/{feature} [get]
 func (h *Handler) GetLeaderboard(c *gin.Context) {
 	feature := c.Param("feature")
 	limit, err := strconv.ParseInt(c.DefaultQuery("limit", "10"), 10, 64)

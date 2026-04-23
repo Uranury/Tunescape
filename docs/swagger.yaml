@@ -69,6 +69,26 @@ definitions:
       access_token:
         type: string
     type: object
+  leaderboard.Entry:
+    properties:
+      display_name:
+        type: string
+      rank:
+        type: integer
+      score:
+        type: number
+      user_id:
+        type: string
+    type: object
+  leaderboard.LeaderboardResponse:
+    properties:
+      entries:
+        items:
+          $ref: '#/definitions/leaderboard.Entry'
+        type: array
+      feature:
+        type: string
+    type: object
   snapshot.Snapshot:
     properties:
       created_at:
@@ -79,6 +99,15 @@ definitions:
         items:
           $ref: '#/definitions/track.Track'
         type: array
+      user_id:
+        type: string
+    type: object
+  snapshot.SnapshotSummary:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
       user_id:
         type: string
     type: object
@@ -93,13 +122,60 @@ definitions:
       spotify_id:
         type: string
     type: object
+  trends.SnapshotPoint:
+    properties:
+      acousticness:
+        type: number
+      created_at:
+        type: string
+      danceability:
+        type: number
+      energy:
+        type: number
+      instrumentalness:
+        type: number
+      liveness:
+        type: number
+      loudness:
+        type: number
+      snapshot_id:
+        type: string
+      speechiness:
+        type: number
+      tempo:
+        type: number
+      tracks_count:
+        type: integer
+      valence:
+        type: number
+    type: object
+  trends.TrendsResponse:
+    properties:
+      points:
+        items:
+          $ref: '#/definitions/trends.SnapshotPoint'
+        type: array
+      user_id:
+        type: string
+    type: object
+  user.ProfileResponse:
+    properties:
+      avatar_url:
+        type: string
+      display_name:
+        type: string
+      email:
+        type: string
+      spotify_connected:
+        type: boolean
+    type: object
 info:
   contact: {}
   description: Tunescape backend API.
   title: Tunescape API
   version: "1.0"
 paths:
-  /analytics/me/top-tracks:
+  /analytics/top-tracks:
     get:
       description: Reads the authenticated user's latest snapshot, fetches audio features
       produces:
@@ -273,7 +349,117 @@ paths:
       summary: Spotify OAuth login
       tags:
       - spotify
+  /leaderboards/{feature}:
+    get:
+      description: 'Returns the top-ranked users for a given audio feature. Valid
+        features: valence, energy, danceability, acousticness.'
+      parameters:
+      - description: Audio feature
+        enum:
+        - valence
+        - energy
+        - danceability
+        - acousticness
+        in: path
+        name: feature
+        required: true
+        type: string
+      - description: Number of entries to return (default 10)
+        in: query
+        name: limit
+        type: integer
+      - description: Number of entries to skip (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/leaderboard.LeaderboardResponse'
+        "400":
+          description: Invalid feature
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+      summary: Get global leaderboard
+      tags:
+      - leaderboards
+  /me/profile:
+    get:
+      description: Returns the authenticated user's display name, email, avatar, and
+        Spotify connection status.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.ProfileResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+      summary: Get current user profile
+      tags:
+      - user
+  /me/report:
+    get:
+      description: Generates and streams a PDF report containing the user's top tracks,
+        leaderboard rankings, and summary stats.
+      produces:
+      - application/pdf
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Download PDF report
+      tags:
+      - report
   /me/snapshots:
+    get:
+      description: Returns all snapshots for the authenticated user, ordered by most
+        recent first.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/snapshot.SnapshotSummary'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+      summary: List snapshots
+      tags:
+      - snapshots
     post:
       description: Fetches the authenticated user's top 50 tracks from Spotify,
       produces:
@@ -298,4 +484,84 @@ paths:
       summary: Create top-tracks snapshot
       tags:
       - snapshots
+  /me/snapshots/{id}:
+    get:
+      description: Returns a single snapshot with its full track list. Returns 404
+        if the snapshot does not exist or belongs to another user.
+      parameters:
+      - description: Snapshot UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/snapshot.Snapshot'
+        "400":
+          description: Invalid UUID
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+      summary: Get snapshot by ID
+      tags:
+      - snapshots
+  /me/spotify:
+    delete:
+      description: Removes the Spotify connection and tokens for the authenticated
+        user.
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+      summary: Disconnect Spotify account
+      tags:
+      - spotify
+  /me/trends:
+    get:
+      description: Returns a time-ordered series of audio feature averages, one point
+        per snapshot.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/trends.TrendsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apperrors.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Get listening trends
+      tags:
+      - trends
 swagger: "2.0"

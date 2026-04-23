@@ -16,6 +16,8 @@ const topTracksLimit = 50
 
 type Service interface {
 	CreateSnapshot(ctx context.Context, userID uuid.UUID) (*Snapshot, error)
+	ListSnapshots(ctx context.Context, userID uuid.UUID) ([]SnapshotSummary, error)
+	GetSnapshot(ctx context.Context, userID, snapshotID uuid.UUID) (*Snapshot, error)
 }
 
 type service struct {
@@ -91,4 +93,12 @@ func (s *service) CreateSnapshot(ctx context.Context, userID uuid.UUID) (*Snapsh
 	}
 
 	return result, nil
+}
+
+func (s *service) ListSnapshots(ctx context.Context, userID uuid.UUID) ([]SnapshotSummary, error) {
+	return s.repo.ListByUserID(ctx, userID)
+}
+
+func (s *service) GetSnapshot(ctx context.Context, userID, snapshotID uuid.UUID) (*Snapshot, error) {
+	return s.repo.GetByID(ctx, snapshotID, userID)
 }

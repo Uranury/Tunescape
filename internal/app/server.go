@@ -116,6 +116,8 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 func (s *Server) registerRoutes() {
 	s.router.StaticFile("/", "./frontend/index.html")
+	s.router.Static("/css", "./frontend/css")
+	s.router.Static("/js", "./frontend/js")
 	s.router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	authGroup := s.router.Group("/auth")
@@ -133,6 +135,8 @@ func (s *Server) registerRoutes() {
 		meGroup.GET("/profile", s.userHandler.GetProfile)
 		meGroup.DELETE("/spotify", s.spotifyHandler.DisconnectHandler)
 		meGroup.POST("/snapshots", s.snapshotHandler.CreateSnapshot)
+		meGroup.GET("/snapshots", s.snapshotHandler.ListSnapshots)
+		meGroup.GET("/snapshots/:id", s.snapshotHandler.GetSnapshot)
 		meGroup.GET("/trends", s.trendsHandler.GetTrends)
 		meGroup.GET("/report", s.reportHandler.GetReport)
 	}

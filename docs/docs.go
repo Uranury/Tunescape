@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/analytics/me/top-tracks": {
+        "/analytics/top-tracks": {
             "get": {
                 "description": "Reads the authenticated user's latest snapshot, fetches audio features",
                 "produces": [
@@ -272,7 +272,168 @@ const docTemplate = `{
                 }
             }
         },
+        "/leaderboards/{feature}": {
+            "get": {
+                "description": "Returns the top-ranked users for a given audio feature. Valid features: valence, energy, danceability, acousticness.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "leaderboards"
+                ],
+                "summary": "Get global leaderboard",
+                "parameters": [
+                    {
+                        "enum": [
+                            "valence",
+                            "energy",
+                            "danceability",
+                            "acousticness"
+                        ],
+                        "type": "string",
+                        "description": "Audio feature",
+                        "name": "feature",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of entries to return (default 10)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of entries to skip (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/leaderboard.LeaderboardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid feature",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/profile": {
+            "get": {
+                "description": "Returns the authenticated user's display name, email, avatar, and Spotify connection status.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Get current user profile",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user.ProfileResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/report": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Generates and streams a PDF report containing the user's top tracks, leaderboard rankings, and summary stats.",
+                "produces": [
+                    "application/pdf"
+                ],
+                "tags": [
+                    "report"
+                ],
+                "summary": "Download PDF report",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/me/snapshots": {
+            "get": {
+                "description": "Returns all snapshots for the authenticated user, ordered by most recent first.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "snapshots"
+                ],
+                "summary": "List snapshots",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/snapshot.SnapshotSummary"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Fetches the authenticated user's top 50 tracks from Spotify,",
                 "produces": [
@@ -297,6 +458,125 @@ const docTemplate = `{
                     },
                     "422": {
                         "description": "Spotify account not connected",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/snapshots/{id}": {
+            "get": {
+                "description": "Returns a single snapshot with its full track list. Returns 404 if the snapshot does not exist or belongs to another user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "snapshots"
+                ],
+                "summary": "Get snapshot by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Snapshot UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/snapshot.Snapshot"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid UUID",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/spotify": {
+            "delete": {
+                "description": "Removes the Spotify connection and tokens for the authenticated user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "spotify"
+                ],
+                "summary": "Disconnect Spotify account",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apperrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/trends": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a time-ordered series of audio feature averages, one point per snapshot.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "trends"
+                ],
+                "summary": "Get listening trends",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/trends.TrendsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/apperrors.HTTPError"
                         }
@@ -415,6 +695,37 @@ const docTemplate = `{
                 }
             }
         },
+        "leaderboard.Entry": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "rank": {
+                    "type": "integer"
+                },
+                "score": {
+                    "type": "number"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "leaderboard.LeaderboardResponse": {
+            "type": "object",
+            "properties": {
+                "entries": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/leaderboard.Entry"
+                    }
+                },
+                "feature": {
+                    "type": "string"
+                }
+            }
+        },
         "snapshot.Snapshot": {
             "type": "object",
             "properties": {
@@ -435,6 +746,20 @@ const docTemplate = `{
                 }
             }
         },
+        "snapshot.SnapshotSummary": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
         "track.Track": {
             "type": "object",
             "properties": {
@@ -449,6 +774,78 @@ const docTemplate = `{
                 },
                 "spotify_id": {
                     "type": "string"
+                }
+            }
+        },
+        "trends.SnapshotPoint": {
+            "type": "object",
+            "properties": {
+                "acousticness": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "danceability": {
+                    "type": "number"
+                },
+                "energy": {
+                    "type": "number"
+                },
+                "instrumentalness": {
+                    "type": "number"
+                },
+                "liveness": {
+                    "type": "number"
+                },
+                "loudness": {
+                    "type": "number"
+                },
+                "snapshot_id": {
+                    "type": "string"
+                },
+                "speechiness": {
+                    "type": "number"
+                },
+                "tempo": {
+                    "type": "number"
+                },
+                "tracks_count": {
+                    "type": "integer"
+                },
+                "valence": {
+                    "type": "number"
+                }
+            }
+        },
+        "trends.TrendsResponse": {
+            "type": "object",
+            "properties": {
+                "points": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/trends.SnapshotPoint"
+                    }
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.ProfileResponse": {
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
+                "display_name": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "spotify_connected": {
+                    "type": "boolean"
                 }
             }
         }
