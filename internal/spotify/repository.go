@@ -14,6 +14,7 @@ import (
 type Repository interface {
 	UpsertTokens(ctx context.Context, userID uuid.UUID, accessToken, refreshToken string, expiresAt time.Time) error
 	GetByUserID(ctx context.Context, userID uuid.UUID) (*Token, error)
+	DeleteByUserID(ctx context.Context, userID uuid.UUID) error
 }
 
 type repository struct {
@@ -35,6 +36,11 @@ func (r *repository) UpsertTokens(ctx context.Context, userID uuid.UUID, accessT
 			updated_at    = NOW()
 	`
 	_, err := r.exec.ExecContext(ctx, query, userID, accessToken, refreshToken, expiresAt)
+	return err
+}
+
+func (r *repository) DeleteByUserID(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.exec.ExecContext(ctx, `DELETE FROM spotify_tokens WHERE user_id = $1`, userID)
 	return err
 }
 

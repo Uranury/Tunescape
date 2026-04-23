@@ -50,7 +50,7 @@ func main() {
 
 	spotifyClient := spotify.NewClient(deps.Config.Spotify, deps.HTTPClient)
 	spotifyRepo := spotify.NewRepository(deps.DBConn)
-	spotifySvc := spotify.NewService(spotifyRepo, userRepo, spotifyClient)
+	spotifySvc := spotify.NewService(spotifyRepo, userRepo, spotifyClient, txProvider, deps.Logger)
 	spotifyHandler := spotify.NewHandler(spotifySvc, authSvc, deps.Logger, deps.Config.IsProd(), deps.Config.FrontendURL)
 
 	snapshotRepo := snapshot.NewRepository(deps.DBConn)

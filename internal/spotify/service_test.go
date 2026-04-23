@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -24,6 +25,8 @@ type mockSpotifyRepo struct {
 func (m *mockSpotifyRepo) UpsertTokens(ctx context.Context, userID uuid.UUID, accessToken, refreshToken string, expiresAt time.Time) error {
 	return m.upsertFn(ctx, userID, accessToken, refreshToken, expiresAt)
 }
+
+func (m *mockSpotifyRepo) DeleteByUserID(_ context.Context, _ uuid.UUID) error { return nil }
 
 func (m *mockSpotifyRepo) GetByUserID(ctx context.Context, userID uuid.UUID) (*Token, error) {
 	if m.getByUserIDFn != nil {
@@ -46,6 +49,7 @@ func (m *mockUserRepo) Create(ctx context.Context, u *user.User) error { return 
 func (m *mockUserRepo) FindByEmail(ctx context.Context, email string) (*user.User, error) {
 	return m.findByEmailFn(ctx, email)
 }
+func (m *mockUserRepo) ClearSpotify(_ context.Context, _ uuid.UUID) error { return nil }
 func (m *mockUserRepo) FindByID(_ context.Context, _ uuid.UUID) (*user.User, error) {
 	return nil, nil
 }
@@ -80,7 +84,7 @@ func TestSpotifyService_AuthURL(t *testing.T) {
 	repo := &mockSpotifyRepo{}
 	userRepo := &mockUserRepo{}
 
-	svc := NewService(repo, userRepo, c)
+	svc := NewService(repo, userRepo, c, nil, slog.Default())
 	got := svc.AuthURL(codeState)
 
 	want := c.oauth2Cfg.AuthCodeURL(codeState)
@@ -118,7 +122,7 @@ func TestSpotifyService_UpsertTokens(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, &mockUserRepo{}, &Client{})
+	svc := NewService(repo, &mockUserRepo{}, &Client{}, nil, slog.Default())
 	if err := svc.UpsertTokens(ctx, userID, accessToken, refreshToken, expiresAt); err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
@@ -231,7 +235,7 @@ func TestSpotifyService_ConnectAccount_Success(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, userRepo, c)
+	svc := NewService(repo, userRepo, c, nil, slog.Default())
 	before := time.Now()
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, httpClient)
 	if err := svc.ConnectAccount(ctx, userID, authCode); err != nil {
@@ -306,7 +310,7 @@ func TestSpotifyService_ConnectAccount_TokenExchangeError(t *testing.T) {
 		},
 	}
 
-	svc := NewService(&mockSpotifyRepo{}, &mockUserRepo{}, c)
+	svc := NewService(&mockSpotifyRepo{}, &mockUserRepo{}, c, nil, slog.Default())
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, httpClient)
 	err := svc.ConnectAccount(ctx, userID, authCode)
 	if err == nil {
@@ -374,7 +378,7 @@ func TestSpotifyService_ConnectAccount_GetMeError(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, userRepo, c)
+	svc := NewService(repo, userRepo, c, nil, slog.Default())
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, httpClient)
 	err := svc.ConnectAccount(ctx, userID, authCode)
 

@@ -13,6 +13,7 @@ import (
 
 type Repository interface {
 	ConnectSpotify(ctx context.Context, userID uuid.UUID, spotifyID *string, avatarURL, country, product *string) error
+	ClearSpotify(ctx context.Context, userID uuid.UUID) error
 	Create(ctx context.Context, u *User) error
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByID(ctx context.Context, userID uuid.UUID) (*User, error)
@@ -72,6 +73,20 @@ func (r *repository) FindByEmail(ctx context.Context, email string) (*User, erro
 	u := &User{}
 	err := r.exec.QueryRowxContext(ctx, query, email).StructScan(u)
 	return u, err
+}
+
+func (r *repository) ClearSpotify(ctx context.Context, userID uuid.UUID) error {
+	query := `
+		UPDATE users
+		SET spotify_id = NULL,
+		    avatar_url = NULL,
+		    country    = NULL,
+		    product    = NULL,
+		    updated_at = NOW()
+		WHERE id = $1
+	`
+	_, err := r.exec.ExecContext(ctx, query, userID)
+	return err
 }
 
 func (r *repository) FindByID(ctx context.Context, userID uuid.UUID) (*User, error) {

@@ -128,6 +128,7 @@ func (s *Server) registerRoutes() {
 	meGroup := s.router.Group("/me", s.authMiddleware.JWTAuth())
 	{
 		meGroup.GET("/profile", s.userHandler.GetProfile)
+		meGroup.DELETE("/spotify", s.spotifyHandler.DisconnectHandler)
 		meGroup.POST("/snapshots", s.snapshotHandler.CreateSnapshot)
 		meGroup.GET("/trends", s.trendsHandler.GetTrends)
 		meGroup.GET("/report", s.reportHandler.GetReport)

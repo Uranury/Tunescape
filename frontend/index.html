@@ -453,11 +453,21 @@
 						<div>
 							<h2 id="user-name">Loading...</h2>
 							<p id="user-email" style="color: #666; margin-top: 0.25rem"></p>
-							<div
-								id="spotify-status"
-								class="spotify-status spotify-disconnected"
-							>
-								🔴 Spotify not connected
+							<div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap">
+								<div
+									id="spotify-status"
+									class="spotify-status spotify-disconnected"
+								>
+									🔴 Spotify not connected
+								</div>
+								<button
+									id="disconnect-spotify-btn"
+									class="btn"
+									onclick="disconnectSpotify()"
+									style="display: none; width: auto; padding: 0.4rem 1rem; background: #ff4444; color: white; font-size: 0.8rem"
+								>
+									Disconnect
+								</button>
 							</div>
 						</div>
 					</div>
@@ -692,6 +702,7 @@
 					spotifyStatus.className = 'spotify-status spotify-connected'
 					spotifyStatus.innerHTML = '🟢 Spotify connected'
 					connectCard.style.display = 'none'
+					document.getElementById('disconnect-spotify-btn').style.display = 'inline-block'
 					await loadTopTracks()
 				} else {
 					spotifyStatus.className = 'spotify-status spotify-disconnected'
@@ -750,6 +761,21 @@
 			}
 			function connectSpotify() {
 				window.location.href = '/auth/spotify/login'
+			}
+
+			async function disconnectSpotify() {
+				if (!confirm('Disconnect your Spotify account?')) return
+				const res = await apiRequest('/me/spotify', 'DELETE', null, true)
+				if (res.ok) {
+					document.getElementById('spotify-status').className = 'spotify-status spotify-disconnected'
+					document.getElementById('spotify-status').innerHTML = '🔴 Spotify not connected'
+					document.getElementById('spotify-connect-card').style.display = 'block'
+					document.getElementById('disconnect-spotify-btn').style.display = 'none'
+					document.getElementById('tracks-section').style.display = 'none'
+					showAlert('Spotify disconnected.', 'success')
+				} else {
+					showAlert('Failed to disconnect Spotify.', 'error')
+				}
 			}
 
 			// Analyze Music Taste (calls /analytics/top-tracks and pushes scores)

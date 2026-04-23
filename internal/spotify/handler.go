@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gitlab.com/Uranury/tunescape/internal/auth"
 	"gitlab.com/Uranury/tunescape/pkg/apperrors"
 )
@@ -121,6 +122,35 @@ func (h *Handler) CallbackHandler(c *gin.Context) {
 	}
 
 	c.Redirect(http.StatusFound, h.frontendURL+"?connected=1")
+}
+
+// @Summary      Disconnect Spotify account
+// @Description  Removes the Spotify connection and tokens for the authenticated user.
+// @Tags         spotify
+// @Produce      json
+// @Success      204
+// @Failure      401  {object}  apperrors.HTTPError
+// @Failure      500  {object}  apperrors.HTTPError
+// @Router       /me/spotify [delete]
+func (h *Handler) DisconnectHandler(c *gin.Context) {
+	val, exists := c.Get("user_id")
+	if !exists {
+		apperrors.GenHTTPError(c, http.StatusUnauthorized, apperrors.ErrUnauthorized.Error(), nil)
+		return
+	}
+	userID, ok := val.(uuid.UUID)
+	if !ok {
+		apperrors.GenHTTPError(c, http.StatusUnauthorized, apperrors.ErrUnauthorized.Error(), nil)
+		return
+	}
+
+	if err := h.svc.Disconnect(c.Request.Context(), userID); err != nil {
+		h.logger.Error("failed to disconnect spotify", "user_id", userID, "error", err)
+		apperrors.GenHTTPError(c, http.StatusInternalServerError, "failed to disconnect spotify", nil)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
 func generateRandomState() (string, error) {

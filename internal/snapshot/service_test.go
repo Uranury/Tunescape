@@ -35,6 +35,7 @@ func (m *mockSpotifyService) AuthURL(_ string) string { return "" }
 func (m *mockSpotifyService) ConnectAccount(_ context.Context, _ uuid.UUID, _ string) error {
 	return nil
 }
+func (m *mockSpotifyService) Disconnect(_ context.Context, _ uuid.UUID) error { return nil }
 func (m *mockSpotifyService) GetValidToken(_ context.Context, _ uuid.UUID) (string, error) {
 	return "", nil
 }
