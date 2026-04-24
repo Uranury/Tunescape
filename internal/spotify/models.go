@@ -1,8 +1,10 @@
 package spotify
 
 import (
-	"github.com/google/uuid"
+	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Token struct {
@@ -12,4 +14,23 @@ type Token struct {
 	RefreshToken string    `db:"refresh_token"`
 	ExpiresAt    time.Time `db:"expires_at"`
 	UpdatedAt    time.Time `db:"updated_at"`
+}
+
+type TimeRange string
+
+const (
+	ShortTerm  TimeRange = "short_term"
+	MediumTerm TimeRange = "medium_term"
+	LongTerm   TimeRange = "long_term"
+)
+
+func ParseTimeRange(s string) (TimeRange, error) {
+	switch TimeRange(s) {
+	case ShortTerm, MediumTerm, LongTerm:
+		return TimeRange(s), nil
+	case "":
+		return MediumTerm, nil
+	default:
+		return "", fmt.Errorf("invalid time_range %q: must be short_term, medium_term, or long_term", s)
+	}
 }

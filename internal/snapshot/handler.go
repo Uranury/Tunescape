@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gitlab.com/Uranury/tunescape/internal/middleware"
+	"gitlab.com/Uranury/tunescape/internal/spotify"
 	"gitlab.com/Uranury/tunescape/pkg/apperrors"
 )
 
@@ -20,12 +21,20 @@ func NewHandler(svc Service) *Handler {
 
 // @Summary      Create top-tracks snapshot
 // @Description  Fetches the authenticated user's top 50 tracks from Spotify,
-//               persists them, and returns the new snapshot with its track list.
+//
+//	persists them, and returns the new snapshot with its track list.
+//	Optionally accepts a `time_range` query parameter:
+//	`short_term` (last ~4 weeks), `medium_term` (last ~6 months, default),
+//	or `long_term` (all time).
+//
 // @Tags         snapshots
 // @Produce      json
+// @Param        time_range  query     string  false  "Time range for top tracks (short_term | medium_term | long_term)"  Enums(short_term, medium_term, long_term)  default(medium_term)
 // @Success      201  {object}  Snapshot
+// @Failure      400  {object}  apperrors.HTTPError  "Invalid time_range value"
 // @Failure      401  {object}  apperrors.HTTPError
 // @Failure      422  {object}  apperrors.HTTPError  "Spotify account not connected"
+// @Failure      502  {object}  apperrors.HTTPError  "Spotify temporarily unavailable"
 // @Failure      500  {object}  apperrors.HTTPError
 // @Router       /me/snapshots [post]
 func (h *Handler) CreateSnapshot(c *gin.Context) {
@@ -35,7 +44,13 @@ func (h *Handler) CreateSnapshot(c *gin.Context) {
 		return
 	}
 
-	snap, err := h.svc.CreateSnapshot(c.Request.Context(), userID)
+	timeRange, err := spotify.ParseTimeRange(c.Query("time_range"))
+	if err != nil {
+		apperrors.GenHTTPError(c, http.StatusBadRequest, err.Error(), nil)
+		return
+	}
+
+	snap, err := h.svc.CreateSnapshot(c.Request.Context(), userID, timeRange)
 	if err != nil {
 		switch {
 		case errors.Is(err, apperrors.ErrSpotifyNotConnected):

@@ -82,8 +82,8 @@ func (c *Client) getMe(ctx context.Context, accessToken string) (*spotifyProfile
 	return &profile, nil
 }
 
-func (c *Client) GetTopTracks(ctx context.Context, accessToken string, limit int) ([]topTrackItem, error) {
-	url := fmt.Sprintf("https://api.spotify.com/v1/me/top/tracks?limit=%d&time_range=long_term", limit)
+func (c *Client) GetTopTracks(ctx context.Context, accessToken string, limit int, timeRange TimeRange) ([]topTrackItem, error) {
+	url := fmt.Sprintf("https://api.spotify.com/v1/me/top/tracks?limit=%d&time_range=%s", limit, timeRange)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

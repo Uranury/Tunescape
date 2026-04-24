@@ -15,7 +15,7 @@ import (
 const topTracksLimit = 50
 
 type Service interface {
-	CreateSnapshot(ctx context.Context, userID uuid.UUID) (*Snapshot, error)
+	CreateSnapshot(ctx context.Context, userID uuid.UUID, timeRange spotify.TimeRange) (*Snapshot, error)
 	ListSnapshots(ctx context.Context, userID uuid.UUID) ([]SnapshotSummary, error)
 	GetSnapshot(ctx context.Context, userID, snapshotID uuid.UUID) (*Snapshot, error)
 }
@@ -44,8 +44,8 @@ func NewService(
 	}
 }
 
-func (s *service) CreateSnapshot(ctx context.Context, userID uuid.UUID) (*Snapshot, error) {
-	topTracks, err := s.spotifySvc.GetTopTracks(ctx, userID, topTracksLimit)
+func (s *service) CreateSnapshot(ctx context.Context, userID uuid.UUID, timeRange spotify.TimeRange) (*Snapshot, error) {
+	topTracks, err := s.spotifySvc.GetTopTracks(ctx, userID, topTracksLimit, timeRange)
 	if err != nil {
 		s.logger.Error("failed to fetch top tracks from spotify", "user_id", userID, "error", err)
 		return nil, fmt.Errorf("fetch top tracks from spotify: %w", err)

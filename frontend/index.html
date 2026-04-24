@@ -1,237 +1,248 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tunescape</title>
-  <link rel="stylesheet" href="/css/main.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Tunescape</title>
+	<link rel="stylesheet" href="/css/main.css" />
+	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
 <!-- ── Auth screen ── -->
 <div id="auth-screen" class="auth-screen">
-  <div class="auth-box">
-    <div class="auth-logo">
-      <div class="wordmark">Tunescape</div>
-      <div class="tagline">Your music. Analyzed.</div>
-    </div>
-    <h2 id="auth-title" class="auth-title">Sign in</h2>
+	<div class="auth-box">
+		<div class="auth-logo">
+			<div class="wordmark">Tunescape</div>
+			<div class="tagline">Your music. Analyzed.</div>
+		</div>
+		<h2 id="auth-title" class="auth-title">Sign in</h2>
 
-    <div id="login-form">
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="login-email" placeholder="you@example.com"
-               onkeydown="if(event.key==='Enter')login()" />
-      </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="login-password" placeholder="Your password"
-               onkeydown="if(event.key==='Enter')login()" />
-      </div>
-      <button class="btn btn-primary" onclick="login()">Sign in</button>
-      <div class="switch-auth">
-        No account? <a onclick="showSignupForm()">Create one</a>
-      </div>
-    </div>
+		<div id="login-form">
+			<div class="form-group">
+				<label>Email</label>
+				<input type="email" id="login-email" placeholder="you@example.com"
+					   onkeydown="if(event.key==='Enter')login()" />
+			</div>
+			<div class="form-group">
+				<label>Password</label>
+				<input type="password" id="login-password" placeholder="Your password"
+					   onkeydown="if(event.key==='Enter')login()" />
+			</div>
+			<button class="btn btn-primary" onclick="login()">Sign in</button>
+			<div class="switch-auth">
+				No account? <a onclick="showSignupForm()">Create one</a>
+			</div>
+		</div>
 
-    <div id="signup-form" style="display:none">
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="signup-email" placeholder="you@example.com" />
-      </div>
-      <div class="form-group">
-        <label>Display name</label>
-        <input type="text" id="signup-name" placeholder="How should we call you?" />
-      </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="signup-password" placeholder="At least 8 characters" />
-      </div>
-      <button class="btn btn-primary" onclick="signup()">Create account</button>
-      <div class="switch-auth">
-        Already have an account? <a onclick="showLoginForm()">Sign in</a>
-      </div>
-    </div>
-  </div>
+		<div id="signup-form" style="display:none">
+			<div class="form-group">
+				<label>Email</label>
+				<input type="email" id="signup-email" placeholder="you@example.com" />
+			</div>
+			<div class="form-group">
+				<label>Display name</label>
+				<input type="text" id="signup-name" placeholder="How should we call you?" />
+			</div>
+			<div class="form-group">
+				<label>Password</label>
+				<input type="password" id="signup-password" placeholder="At least 8 characters" />
+			</div>
+			<button class="btn btn-primary" onclick="signup()">Create account</button>
+			<div class="switch-auth">
+				Already have an account? <a onclick="showLoginForm()">Sign in</a>
+			</div>
+		</div>
+	</div>
 </div>
 
 <!-- ── App shell ── -->
 <div id="app-shell" class="app-shell">
 
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <div class="sidebar-logo">Tune<span>scape</span></div>
-    </div>
+	<!-- Sidebar -->
+	<aside class="sidebar">
+		<div class="sidebar-header">
+			<div class="sidebar-logo">Tune<span>scape</span></div>
+		</div>
 
-    <div class="sidebar-profile">
-      <div class="avatar" id="sidebar-avatar">?</div>
-      <div class="profile-meta">
-        <div class="profile-name" id="sidebar-name">—</div>
-        <div class="profile-email" id="sidebar-email">—</div>
-      </div>
-    </div>
+		<div class="sidebar-profile">
+			<div class="avatar" id="sidebar-avatar">?</div>
+			<div class="profile-meta">
+				<div class="profile-name" id="sidebar-name">—</div>
+				<div class="profile-email" id="sidebar-email">—</div>
+			</div>
+		</div>
 
-    <nav class="sidebar-nav">
-      <div class="nav-item active" data-panel="tracks" onclick="navigateTo('tracks')">
-        <span class="nav-icon">🎵</span>
-        <span class="nav-label">My Tracks</span>
-      </div>
-      <div class="nav-item" data-panel="analytics" onclick="navigateTo('analytics')">
-        <span class="nav-icon">📊</span>
-        <span class="nav-label">Analytics</span>
-      </div>
-      <div class="nav-item" data-panel="leaderboard" onclick="navigateTo('leaderboard')">
-        <span class="nav-icon">🏆</span>
-        <span class="nav-label">Leaderboard</span>
-      </div>
-    </nav>
+		<nav class="sidebar-nav">
+			<div class="nav-item active" data-panel="tracks" onclick="navigateTo('tracks')">
+				<span class="nav-icon">🎵</span>
+				<span class="nav-label">My Tracks</span>
+			</div>
+			<div class="nav-item" data-panel="analytics" onclick="navigateTo('analytics')">
+				<span class="nav-icon">📊</span>
+				<span class="nav-label">Analytics</span>
+			</div>
+			<div class="nav-item" data-panel="leaderboard" onclick="navigateTo('leaderboard')">
+				<span class="nav-icon">🏆</span>
+				<span class="nav-label">Leaderboard</span>
+			</div>
+		</nav>
 
-    <div class="sidebar-footer">
-      <div id="spotify-badge" class="spotify-badge disconnected">
-        <span class="status-dot offline"></span> Not connected
-      </div>
-      <button id="disconnect-btn" class="btn btn-danger btn-sm"
-              onclick="disconnectSpotify()" style="display:none">
-        Disconnect Spotify
-      </button>
-      <button class="btn btn-ghost btn-sm" onclick="logout()">Sign out</button>
-    </div>
-  </aside>
+		<div class="sidebar-footer">
+			<div id="spotify-badge" class="spotify-badge disconnected">
+				<span class="status-dot offline"></span> Not connected
+			</div>
+			<button id="disconnect-btn" class="btn btn-danger btn-sm"
+					onclick="disconnectSpotify()" style="display:none">
+				Disconnect Spotify
+			</button>
+			<button class="btn btn-ghost btn-sm" onclick="logout()">Sign out</button>
+		</div>
+	</aside>
 
-  <!-- Main area -->
-  <div class="main-area">
-    <div class="topbar">
-      <span id="topbar-title" class="topbar-title">My Tracks</span>
-      <div class="topbar-actions">
-        <div class="loading-bar" id="loading-bar">
-          <div class="spinner"></div>
-          <span>Loading…</span>
-        </div>
-      </div>
-    </div>
+	<!-- Main area -->
+	<div class="main-area">
+		<div class="topbar">
+			<span id="topbar-title" class="topbar-title">My Tracks</span>
+			<div class="topbar-actions">
+				<div class="loading-bar" id="loading-bar">
+					<div class="spinner"></div>
+					<span>Loading…</span>
+				</div>
+			</div>
+		</div>
 
-    <div class="content-area">
+		<div class="content-area">
 
-      <!-- ── Panel: My Tracks ── -->
-      <div id="panel-tracks" class="panel active">
+			<!-- ── Panel: My Tracks ── -->
+			<div id="panel-tracks" class="panel active">
 
-        <div class="stats-row">
-          <div class="stat-card">
-            <div class="stat-number" id="stat-total">—</div>
-            <div class="stat-label">Tracks analyzed</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number" id="stat-avg-pop">—</div>
-            <div class="stat-label">Avg popularity</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number" id="stat-updated">—</div>
-            <div class="stat-label">Last snapshot</div>
-          </div>
-        </div>
+				<div class="stats-row">
+					<div class="stat-card">
+						<div class="stat-number" id="stat-total">—</div>
+						<div class="stat-label">Tracks analyzed</div>
+					</div>
+					<div class="stat-card">
+						<div class="stat-number" id="stat-avg-pop">—</div>
+						<div class="stat-label">Avg popularity</div>
+					</div>
+					<div class="stat-card">
+						<div class="stat-number" id="stat-updated">—</div>
+						<div class="stat-label">Last snapshot</div>
+					</div>
+				</div>
 
-        <!-- Spotify connect prompt -->
-        <div id="connect-card" class="connect-card" style="display:none">
-          <div class="connect-card-icon">🎧</div>
-          <div class="connect-card-body">
-            <h3>Connect your Spotify</h3>
-            <p>Link your Spotify account to capture your top tracks and get insights.</p>
-          </div>
-          <button class="btn btn-spotify" onclick="connectSpotify()">Connect Spotify</button>
-        </div>
+				<!-- Spotify connect prompt -->
+				<div id="connect-card" class="connect-card" style="display:none">
+					<div class="connect-card-icon">🎧</div>
+					<div class="connect-card-body">
+						<h3>Connect your Spotify</h3>
+						<p>Link your Spotify account to capture your top tracks and get insights.</p>
+					</div>
+					<button class="btn btn-spotify" onclick="connectSpotify()">Connect Spotify</button>
+				</div>
 
-        <!-- Track list -->
-        <div id="tracks-panel-content" style="display:none">
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title">Snapshot History</span>
-              <button class="btn btn-primary btn-sm" onclick="captureSnapshot()">+ New Snapshot</button>
-            </div>
-            <div id="snapshot-pills" class="snapshot-pills"></div>
-          </div>
+				<!-- Track list -->
+				<div id="tracks-panel-content" style="display:none">
+					<div class="card">
+						<div class="card-header">
+							<span class="card-title">Snapshot History</span>
+							<div class="section-actions">
+								<select
+										id="time-range-select"
+										aria-label="Select Spotify time range"
+										style="padding: 0.4rem 0.75rem; border-radius: 8px; border: 1px solid #ddd; font-size: 0.9rem;"
+								>
+									<option value="short_term">Last 4 weeks</option>
+									<option value="medium_term" selected>Last 6 months</option>
+									<option value="long_term">All time</option>
+								</select>
+								<button class="btn btn-primary btn-sm" onclick="captureSnapshot()">+ New Snapshot</button>
+							</div>
+						</div>
+						<div id="snapshot-pills" class="snapshot-pills"></div>
+					</div>
 
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title">Tracks</span>
-              <div class="section-actions">
-                <button class="track-limit-btn" data-limit="5"  onclick="setTrackLimit(5)">Top 5</button>
-                <button class="track-limit-btn" data-limit="10" onclick="setTrackLimit(10)">Top 10</button>
-                <button class="track-limit-btn active" data-limit="50" onclick="setTrackLimit(50)">All 50</button>
-              </div>
-            </div>
-            <div id="track-list" class="track-list"></div>
-          </div>
-        </div>
-      </div>
+					<div class="card">
+						<div class="card-header">
+							<span class="card-title">Tracks</span>
+							<div class="section-actions">
+								<button class="track-limit-btn" data-limit="5"  onclick="setTrackLimit(5)">Top 5</button>
+								<button class="track-limit-btn" data-limit="10" onclick="setTrackLimit(10)">Top 10</button>
+								<button class="track-limit-btn active" data-limit="50" onclick="setTrackLimit(50)">All 50</button>
+							</div>
+						</div>
+						<div id="track-list" class="track-list"></div>
+					</div>
+				</div>
+			</div>
 
-      <!-- ── Panel: Analytics ── -->
-      <div id="panel-analytics" class="panel">
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Music Taste Profile</span>
-            <button class="btn btn-primary btn-sm" onclick="analyzeTaste()">Analyze</button>
-          </div>
-          <div id="taste-grid" class="taste-grid">
-            <p class="empty-state">Click Analyze to compute your audio feature averages.</p>
-          </div>
-        </div>
+			<!-- ── Panel: Analytics ── -->
+			<div id="panel-analytics" class="panel">
+				<div class="card">
+					<div class="card-header">
+						<span class="card-title">Music Taste Profile</span>
+						<button class="btn btn-primary btn-sm" onclick="analyzeTaste()">Analyze</button>
+					</div>
+					<div id="taste-grid" class="taste-grid">
+						<p class="empty-state">Click Analyze to compute your audio feature averages.</p>
+					</div>
+				</div>
 
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Trends Over Time</span>
-            <button class="btn btn-ghost btn-sm" onclick="loadTrends()">Load</button>
-          </div>
-          <div id="trends-wrap">
-            <p class="empty-state">Click Load to see how your taste has evolved.</p>
-          </div>
-        </div>
+				<div class="card">
+					<div class="card-header">
+						<span class="card-title">Trends Over Time</span>
+						<button class="btn btn-ghost btn-sm" onclick="loadTrends()">Load</button>
+					</div>
+					<div id="trends-wrap">
+						<p class="empty-state">Click Load to see how your taste has evolved.</p>
+					</div>
+				</div>
 
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">PDF Report</span>
-            <button class="btn btn-ghost btn-sm" onclick="downloadReport()">⬇ Download</button>
-          </div>
-          <p style="font-size:.82rem;color:var(--muted)">
-            A full report with your top tracks, leaderboard rankings, and summary stats.
-          </p>
-        </div>
-      </div>
+				<div class="card">
+					<div class="card-header">
+						<span class="card-title">PDF Report</span>
+						<button class="btn btn-ghost btn-sm" onclick="downloadReport()">⬇ Download</button>
+					</div>
+					<p style="font-size:.82rem;color:var(--muted)">
+						A full report with your top tracks, leaderboard rankings, and summary stats.
+					</p>
+				</div>
+			</div>
 
-      <!-- ── Panel: Leaderboard ── -->
-      <div id="panel-leaderboard" class="panel">
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Global Leaderboard</span>
-          </div>
-          <div class="feature-tabs">
-            <button class="feature-tab active" data-feature="valence"
-                    onclick="loadLeaderboard('valence')">Valence</button>
-            <button class="feature-tab" data-feature="energy"
-                    onclick="loadLeaderboard('energy')">Energy</button>
-            <button class="feature-tab" data-feature="danceability"
-                    onclick="loadLeaderboard('danceability')">Danceability</button>
-            <button class="feature-tab" data-feature="acousticness"
-                    onclick="loadLeaderboard('acousticness')">Acousticness</button>
-          </div>
-          <table class="lb-table">
-            <thead>
-              <tr>
-                <th class="lb-rank">Rank</th>
-                <th>User</th>
-                <th class="lb-score">Score</th>
-              </tr>
-            </thead>
-            <tbody id="lb-body">
-              <tr><td colspan="3" class="empty-state">Click a feature above to load scores.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+			<!-- ── Panel: Leaderboard ── -->
+			<div id="panel-leaderboard" class="panel">
+				<div class="card">
+					<div class="card-header">
+						<span class="card-title">Global Leaderboard</span>
+					</div>
+					<div class="feature-tabs">
+						<button class="feature-tab active" data-feature="valence"
+								onclick="loadLeaderboard('valence')">Valence</button>
+						<button class="feature-tab" data-feature="energy"
+								onclick="loadLeaderboard('energy')">Energy</button>
+						<button class="feature-tab" data-feature="danceability"
+								onclick="loadLeaderboard('danceability')">Danceability</button>
+						<button class="feature-tab" data-feature="acousticness"
+								onclick="loadLeaderboard('acousticness')">Acousticness</button>
+					</div>
+					<table class="lb-table">
+						<thead>
+						<tr>
+							<th class="lb-rank">Rank</th>
+							<th>User</th>
+							<th class="lb-score">Score</th>
+						</tr>
+						</thead>
+						<tbody id="lb-body">
+						<tr><td colspan="3" class="empty-state">Click a feature above to load scores.</td></tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
 
-    </div><!-- /content-area -->
-  </div><!-- /main-area -->
+		</div><!-- /content-area -->
+	</div><!-- /main-area -->
 </div><!-- /app-shell -->
 
 <script type="module" src="/js/app.js"></script>

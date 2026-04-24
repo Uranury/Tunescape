@@ -389,3 +389,99 @@ func TestSpotifyService_ConnectAccount_GetMeError(t *testing.T) {
 		t.Fatalf("expected 'fetch spotify profile' in error, got: %v", err)
 	}
 }
+
+func TestParseTimeRange(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		input   string
+		want    TimeRange
+		wantErr bool
+	}{
+		{"short_term", ShortTerm, false},
+		{"medium_term", MediumTerm, false},
+		{"long_term", LongTerm, false},
+		{"", MediumTerm, false},
+		{"invalid", "", true},
+		{"MEDIUM_TERM", "", true},
+		{"all_time", "", true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.input, func(t *testing.T) {
+			got, err := ParseTimeRange(tc.input)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("expected error for input %q, got nil", tc.input)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error for input %q: %v", tc.input, err)
+			}
+			if got != tc.want {
+				t.Fatalf("expected %q, got %q", tc.want, got)
+			}
+		})
+	}
+}
+
+func TestSpotifyService_GetTopTracks_TimeRangeInURL(t *testing.T) {
+	t.Parallel()
+
+	for _, timeRange := range []TimeRange{ShortTerm, MediumTerm, LongTerm} {
+		tr := timeRange
+		t.Run(string(tr), func(t *testing.T) {
+			t.Parallel()
+
+			ctx := context.Background()
+			userID := uuid.New()
+			accessToken := "test-token"
+
+			tracks := []map[string]any{
+				{"id": "s1", "name": "Track 1", "popularity": 80},
+			}
+			body, _ := json.Marshal(map[string]any{"items": tracks})
+
+			var capturedURL string
+			httpClient := &http.Client{
+				Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+					capturedURL = req.URL.String()
+					return &http.Response{
+						StatusCode: http.StatusOK,
+						Header:     http.Header{"Content-Type": []string{"application/json"}},
+						Body:       io.NopCloser(strings.NewReader(string(body))),
+						Request:    req,
+					}, nil
+				}),
+			}
+
+			c := &Client{
+				httpClient: httpClient,
+				oauth2Cfg:  &oauth2.Config{},
+			}
+
+			repo := &mockSpotifyRepo{
+				getByUserIDFn: func(_ context.Context, _ uuid.UUID) (*Token, error) {
+					return &Token{
+						AccessToken: accessToken,
+						ExpiresAt:   time.Now().Add(time.Hour),
+					}, nil
+				},
+			}
+
+			svc := NewService(repo, &mockUserRepo{}, c, nil, slog.Default())
+			result, err := svc.GetTopTracks(ctx, userID, 50, tr)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if len(result) != 1 {
+				t.Fatalf("expected 1 track, got %d", len(result))
+			}
+			wantParam := "time_range=" + string(tr)
+			if !strings.Contains(capturedURL, wantParam) {
+				t.Fatalf("expected URL to contain %q, got %q", wantParam, capturedURL)
+			}
+		})
+	}
+}

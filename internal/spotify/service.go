@@ -17,7 +17,7 @@ type Service interface {
 	ConnectAccount(ctx context.Context, userID uuid.UUID, code string) error
 	Disconnect(ctx context.Context, userID uuid.UUID) error
 	GetValidToken(ctx context.Context, userID uuid.UUID) (string, error)
-	GetTopTracks(ctx context.Context, userID uuid.UUID, limit int) ([]track.Track, error)
+	GetTopTracks(ctx context.Context, userID uuid.UUID, limit int, timeRange TimeRange) ([]track.Track, error)
 	UpsertTokens(ctx context.Context, userID uuid.UUID, accessToken, refreshToken string, expiresAt time.Time) error
 }
 
@@ -67,12 +67,12 @@ func (s *service) ConnectAccount(ctx context.Context, userID uuid.UUID, code str
 	return s.repo.UpsertTokens(ctx, userID, token.AccessToken, token.RefreshToken, token.Expiry)
 }
 
-func (s *service) GetTopTracks(ctx context.Context, userID uuid.UUID, limit int) ([]track.Track, error) {
+func (s *service) GetTopTracks(ctx context.Context, userID uuid.UUID, limit int, timeRange TimeRange) ([]track.Track, error) {
 	accessToken, err := s.GetValidToken(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
-	items, err := s.client.GetTopTracks(ctx, accessToken, limit)
+	items, err := s.client.GetTopTracks(ctx, accessToken, limit, timeRange)
 	if err != nil {
 		return nil, err
 	}
