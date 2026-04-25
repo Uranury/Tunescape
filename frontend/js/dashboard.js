@@ -119,7 +119,8 @@ export async function selectSnapshot(id) {
 
 export async function captureSnapshot() {
   setLoading(true)
-  const res = await api('/me/snapshots', 'POST', null, true)
+  const timeRange = document.getElementById('time-range-select')?.value || 'medium_term'
+  const res = await api(`/me/snapshots?time_range=${timeRange}`, 'POST', null, true)
   setLoading(false)
 
   if (res.ok && res.data.tracks) {
