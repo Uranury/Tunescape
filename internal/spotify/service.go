@@ -10,7 +10,6 @@ import (
 	"gitlab.com/Uranury/tunescape/internal/track"
 	"gitlab.com/Uranury/tunescape/internal/user"
 	"gitlab.com/Uranury/tunescape/pkg/database"
-	"golang.org/x/oauth2"
 )
 
 type Service interface {
@@ -36,7 +35,7 @@ func NewService(repo Repository, userRepo user.Repository, client *Client, txPro
 }
 
 func (s *service) AuthURL(state string) string {
-	return s.client.oauth2Cfg.AuthCodeURL(state, oauth2.SetAuthURLParam("show_dialog", "true"))
+	return s.client.oauth2Cfg.AuthCodeURL(state)
 }
 
 func (s *service) ConnectAccount(ctx context.Context, userID uuid.UUID, code string) error {
