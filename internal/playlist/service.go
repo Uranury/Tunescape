@@ -1,0 +1,56 @@
+package playlist
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/google/uuid"
+	"gitlab.com/Uranury/tunescape/internal/snapshot"
+	"gitlab.com/Uranury/tunescape/internal/spotify"
+)
+
+type Service interface {
+	CreateFromLatestSnapshot(ctx context.Context, userID uuid.UUID) (*Response, error)
+}
+
+type service struct {
+	snapshotSvc snapshot.Service
+	spotifySvc  spotify.Service
+}
+
+func NewService(snapshotSvc snapshot.Service, spotifySvc spotify.Service) Service {
+	return &service{snapshotSvc: snapshotSvc, spotifySvc: spotifySvc}
+}
+func (s *service) CreateFromLatestSnapshot(ctx context.Context, userID uuid.UUID) (*Response, error) {
+	snap, err := s.snapshotSvc.GetLatestSnapshot(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	trackURIs := make([]string, 0, len(snap.Tracks))
+	for _, t := range snap.Tracks {
+		if t.SpotifyID == "" {
+			continue
+		}
+
+		trackURIs = append(trackURIs, "spotify:track:"+t.SpotifyID)
+	}
+
+	if len(trackURIs) == 0 {
+		return nil, fmt.Errorf("no tracks found for playlist creation")
+	}
+
+	name := "Tunescape Top Tracks · " + snap.CreatedAt.Format("Jan 2, 2006")
+
+	result, err := s.spotifySvc.CreatePlaylist(ctx, userID, name, trackURIs)
+	if err != nil {
+		return nil, fmt.Errorf("create spotify playlist: %w", err)
+	}
+
+	return &Response{
+		PlaylistID:  result.ID,
+		Name:        name,
+		ExternalURL: result.ExternalURL,
+		EmbedURL:    "https://open.spotify.com/embed/playlist/" + result.ID,
+	}, nil
+}

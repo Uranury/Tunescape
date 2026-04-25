@@ -41,7 +41,7 @@ func NewClient(cfg config.Reccobeats, httpClient *http.Client) *Client {
 	}
 }
 
-func (c *Client) GetAudioFeaturesBatch(ctx context.Context, spotifyIDs []string) ([]AudioFeatures, error) {
+func (c *Client) 	GetAudioFeaturesBatch(ctx context.Context, spotifyIDs []string) ([]AudioFeatures, error) {
 	url := fmt.Sprintf("%s/v1/audio-features?ids=%s", c.baseURL, strings.Join(spotifyIDs, ","))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)

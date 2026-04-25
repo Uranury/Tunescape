@@ -16,7 +16,7 @@ export function navigateTo(panelId) {
   const navItem = document.querySelector(`.nav-item[data-panel="${panelId}"]`)
   if (navItem) navItem.classList.add('active')
   document.getElementById('topbar-title').textContent =
-    navItem?.querySelector('.nav-label')?.textContent || ''
+      navItem?.querySelector('.nav-label')?.textContent || ''
 }
 
 export async function loadUserData() {
@@ -74,7 +74,7 @@ export async function loadSnapshotHistory() {
   } else {
     clearTrackStats()
     document.getElementById('track-list').innerHTML =
-      '<p class="empty-state">No snapshots yet — capture one to get started.</p>'
+        '<p class="empty-state">No snapshots yet — capture one to get started.</p>'
   }
 }
 
@@ -101,7 +101,7 @@ function renderSnapshotPills(snapshots) {
 
 export async function selectSnapshot(id) {
   document.querySelectorAll('.snapshot-pill').forEach(p =>
-    p.classList.toggle('active', p.dataset.id === id)
+      p.classList.toggle('active', p.dataset.id === id)
   )
 
   setLoading(true)
@@ -140,7 +140,7 @@ export async function captureSnapshot() {
 export function setTrackLimit(n) {
   trackLimit = n
   document.querySelectorAll('.track-limit-btn').forEach(b =>
-    b.classList.toggle('active', Number(b.dataset.limit) === n)
+      b.classList.toggle('active', Number(b.dataset.limit) === n)
   )
   if (currentSnapshot) renderTracks()
 }
@@ -151,13 +151,13 @@ function renderTracks() {
   const tracks = allTracks.slice(0, trackLimit)
   const total = allTracks.length
   const avgPop = total > 0
-    ? allTracks.reduce((s, t) => s + t.popularity, 0) / total
-    : 0
+      ? allTracks.reduce((s, t) => s + t.popularity, 0) / total
+      : 0
 
   document.getElementById('stat-total').textContent = total
   document.getElementById('stat-avg-pop').textContent = avgPop.toFixed(1)
   document.getElementById('stat-updated').textContent =
-    new Date(snapshot.created_at).toLocaleDateString()
+      new Date(snapshot.created_at).toLocaleDateString()
 
   const list = document.getElementById('track-list')
   list.innerHTML = ''
@@ -191,6 +191,29 @@ function clearTrackStats() {
 
 export function connectSpotify() {
   window.location.href = '/auth/spotify/login'
+}
+
+export async function createPlaylist() {
+  setLoading(true)
+  const res = await api('/me/playlists/top-tracks', 'POST', null, true)
+  setLoading(false)
+
+  if (res.ok) {
+    toast('Playlist created! Opening in Spotify…', 'success')
+    window.open(res.data.external_url, '_blank')
+  } else if (res.status === 404) {
+    toast('No snapshot found — capture one first', 'error')
+  } else if (res.status === 422) {
+    toast('Connect Spotify first', 'error')
+  } else if (res.status === 502) {
+    toast('Spotify is temporarily unavailable. Try again shortly.', 'error')
+  } else if (res.status === 401) {
+    const { logout } = await import('./auth.js')
+    toast('Session expired', 'error')
+    logout()
+  } else {
+    toast('Failed to create playlist', 'error')
+  }
 }
 
 export async function disconnectSpotify() {

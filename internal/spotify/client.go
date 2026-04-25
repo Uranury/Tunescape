@@ -1,6 +1,7 @@
 package spotify
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -48,6 +49,8 @@ func NewClient(cfg config.Spotify, httpClient *http.Client) *Client {
 			"user-read-recently-played",
 			"user-read-private",
 			"user-read-email",
+			"playlist-modify-public",
+			"playlist-modify-private",
 		},
 		Endpoint: spotify.Endpoint,
 	}
@@ -117,4 +120,98 @@ func (c *Client) GetTopTracks(ctx context.Context, accessToken string, limit int
 func (c *Client) RefreshToken(ctx context.Context, refreshToken string) (*oauth2.Token, error) {
 	ts := c.oauth2Cfg.TokenSource(ctx, &oauth2.Token{RefreshToken: refreshToken})
 	return ts.Token()
+}
+
+type createPlaylistRequest struct {
+	Name        string `json:"name"`
+	Public      bool   `json:"public"`
+	Description string `json:"description"`
+}
+
+type createPlaylistResponse struct {
+	ID           string `json:"id"`
+	ExternalURLs struct {
+		Spotify string `json:"spotify"`
+	} `json:"external_urls"`
+}
+
+type addTracksRequest struct {
+	URIs []string `json:"uris"`
+}
+
+func (c *Client) CreatePlaylist(ctx context.Context, accessToken, name string) (*PlaylistResult, error) {
+	body, _ := json.Marshal(createPlaylistRequest{
+		Name:        name,
+		Public:      false,
+		Description: "Created by Tunescape",
+	})
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.spotify.com/v1/me/playlists", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode >= 500 || resp.StatusCode == http.StatusTooManyRequests {
+		return nil, fmt.Errorf("spotify create playlist returned %d: %w", resp.StatusCode, apperrors.ErrUpstreamUnavailable)
+	}
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		return nil, fmt.Errorf("spotify create playlist returned %d: %w", resp.StatusCode, apperrors.ErrSpotifyNotConnected)
+	}
+	if resp.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("spotify create playlist returned %d", resp.StatusCode)
+	}
+
+	var result createPlaylistResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	return &PlaylistResult{ID: result.ID, ExternalURL: result.ExternalURLs.Spotify}, nil
+}
+
+func (c *Client) AddTracksToPlaylist(ctx context.Context, accessToken, playlistID string, trackURIs []string) error {
+	const batchSize = 100
+
+	for start := 0; start < len(trackURIs); start += batchSize {
+		end := start + batchSize
+		if end > len(trackURIs) {
+			end = len(trackURIs)
+		}
+
+		body, _ := json.Marshal(addTracksRequest{URIs: trackURIs[start:end]})
+		url := fmt.Sprintf("https://api.spotify.com/v1/playlists/%s/items", playlistID)
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Authorization", "Bearer "+accessToken)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			return err
+		}
+		_ = resp.Body.Close()
+
+		if resp.StatusCode >= 500 || resp.StatusCode == http.StatusTooManyRequests {
+			return fmt.Errorf("spotify add tracks returned %d: %w", resp.StatusCode, apperrors.ErrUpstreamUnavailable)
+		}
+		if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+			return fmt.Errorf("spotify add tracks returned %d: %w", resp.StatusCode, apperrors.ErrSpotifyNotConnected)
+		}
+		if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("spotify add tracks returned %d", resp.StatusCode)
+		}
+	}
+
+	return nil
 }

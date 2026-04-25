@@ -16,6 +16,7 @@ type Repository interface {
 	CreateSnapshotTrack(ctx context.Context, st *SnapshotTrack) error
 	ListByUserID(ctx context.Context, userID uuid.UUID) ([]SnapshotSummary, error)
 	GetByID(ctx context.Context, snapshotID, userID uuid.UUID) (*Snapshot, error)
+	GetLatestByUserID(ctx context.Context, userID uuid.UUID) (*Snapshot, error)
 }
 
 type repository struct {
@@ -51,6 +52,34 @@ func (r *repository) ListByUserID(ctx context.Context, userID uuid.UUID) ([]Snap
 		return nil, err
 	}
 	return summaries, nil
+}
+
+func (r *repository) GetLatestByUserID(ctx context.Context, userID uuid.UUID) (*Snapshot, error) {
+	var snap Snapshot
+	err := r.exec.QueryRowxContext(ctx,
+		`SELECT id, user_id, created_at FROM snapshots WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1`,
+		userID,
+	).Scan(&snap.ID, &snap.UserID, &snap.CreatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, apperrors.ErrNoSnapshot
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var tracks []track.Track
+	query := `
+		SELECT t.id, t.spotify_id, t.name, t.popularity
+		FROM snapshot_tracks st
+		JOIN tracks t ON t.id = st.track_id
+		WHERE st.snapshot_id = $1
+		ORDER BY st.position
+	`
+	if err := r.exec.SelectContext(ctx, &tracks, query, snap.ID); err != nil {
+		return nil, err
+	}
+	snap.Tracks = tracks
+	return &snap, nil
 }
 
 func (r *repository) GetByID(ctx context.Context, snapshotID, userID uuid.UUID) (*Snapshot, error) {

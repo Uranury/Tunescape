@@ -18,6 +18,7 @@ type Service interface {
 	CreateSnapshot(ctx context.Context, userID uuid.UUID, timeRange spotify.TimeRange) (*Snapshot, error)
 	ListSnapshots(ctx context.Context, userID uuid.UUID) ([]SnapshotSummary, error)
 	GetSnapshot(ctx context.Context, userID, snapshotID uuid.UUID) (*Snapshot, error)
+	GetLatestSnapshot(ctx context.Context, userID uuid.UUID) (*Snapshot, error)
 }
 
 type service struct {
@@ -101,4 +102,8 @@ func (s *service) ListSnapshots(ctx context.Context, userID uuid.UUID) ([]Snapsh
 
 func (s *service) GetSnapshot(ctx context.Context, userID, snapshotID uuid.UUID) (*Snapshot, error) {
 	return s.repo.GetByID(ctx, snapshotID, userID)
+}
+
+func (s *service) GetLatestSnapshot(ctx context.Context, userID uuid.UUID) (*Snapshot, error) {
+	return s.repo.GetLatestByUserID(ctx, userID)
 }

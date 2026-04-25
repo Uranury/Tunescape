@@ -3,6 +3,7 @@ import { showAuth, login, signup, logout, showLoginForm, showSignupForm } from '
 import {
   showDashboard, navigateTo, loadUserData,
   captureSnapshot, selectSnapshot, setTrackLimit, connectSpotify, disconnectSpotify,
+  createPlaylist,
 } from './dashboard.js'
 import { analyzeTaste, loadTrends, downloadReport } from './analytics.js'
 import { loadLeaderboard } from './leaderboard.js'
@@ -23,6 +24,7 @@ window.analyzeTaste     = analyzeTaste
 window.loadTrends       = loadTrends
 window.downloadReport   = downloadReport
 window.loadLeaderboard  = loadLeaderboard
+window.createPlaylist   = createPlaylist
 
 async function checkOAuthCallback() {
   const params = new URLSearchParams(window.location.search)

@@ -40,6 +40,9 @@ func (m *mockSpotifyService) Disconnect(_ context.Context, _ uuid.UUID) error { 
 func (m *mockSpotifyService) GetValidToken(_ context.Context, _ uuid.UUID) (string, error) {
 	return "", nil
 }
+func (m *mockSpotifyService) CreatePlaylist(_ context.Context, _ uuid.UUID, _ string, _ []string) (*spotify.PlaylistResult, error) {
+	return nil, nil
+}
 func (m *mockSpotifyService) UpsertTokens(_ context.Context, _ uuid.UUID, _, _ string, _ time.Time) error {
 	return nil
 }
