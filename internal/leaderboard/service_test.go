@@ -61,6 +61,10 @@ func (m *mockUserRepo) FindDisplayName(ctx context.Context, userID uuid.UUID) (s
 	return "", nil
 }
 
+func (m *mockUserRepo) FindAll(ctx context.Context) ([]user.User, error) {
+	return nil, nil
+}
+
 type mockCache struct {
 	getFn    func(ctx context.Context, key string) ([]byte, error)
 	setFn    func(ctx context.Context, key string, data []byte, ttl time.Duration) error

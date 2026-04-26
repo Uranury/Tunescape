@@ -70,6 +70,10 @@ func (m *mockUserRepo) ClearSpotify(ctx context.Context, userID uuid.UUID) error
 	return nil
 }
 
+func (m *mockUserRepo) FindAll(ctx context.Context) ([]User, error) {
+	return nil, nil
+}
+
 // TestUserService_ValidateCredentials_Success tests successful credential validation
 func TestUserService_ValidateCredentials_Success(t *testing.T) {
 	t.Parallel()

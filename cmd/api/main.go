@@ -23,6 +23,7 @@ import (
 	"gitlab.com/Uranury/tunescape/internal/spotify"
 	"gitlab.com/Uranury/tunescape/internal/trends"
 	"gitlab.com/Uranury/tunescape/internal/user"
+	"gitlab.com/Uranury/tunescape/internal/worker"
 	"gitlab.com/Uranury/tunescape/pkg/database"
 )
 
@@ -60,6 +61,7 @@ func main() {
 
 	playlistSvc := playlist.NewService(snapshotSvc, spotifySvc)
 	playlistHandler := playlist.NewHandler(playlistSvc)
+	snapshotWorker := worker.NewSnapshotWorker(userRepo, snapshotSvc, txProvider, deps.Logger, 24*time.Hour)
 
 	leaderboardStore := leaderboard.NewStore(deps.RedisClient)
 	leaderboardSvc := leaderboard.NewService(leaderboardStore, userRepo, redisCache)
@@ -95,6 +97,7 @@ func main() {
 		playlistHandler,
 		authMiddleware,
 		rateLimiter,
+		snapshotWorker,
 	)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

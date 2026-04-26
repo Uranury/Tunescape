@@ -60,6 +60,10 @@ func (m *mockUserRepo) FindDisplayNamesByIDs(_ context.Context, _ []string) (map
 	return map[string]string{}, nil
 }
 
+func (m *mockUserRepo) FindAll(_ context.Context) ([]user.User, error) {
+	return nil, nil
+}
+
 type roundTripperFunc func(req *http.Request) (*http.Response, error)
 
 func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }

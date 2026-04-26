@@ -67,6 +67,10 @@ func (m *mockUserRepository) FindDisplayNamesByIDs(ctx context.Context, userIDs 
 	return nil, nil
 }
 
+func (m *mockUserRepository) FindAll(ctx context.Context) ([]user.User, error) {
+	return nil, nil
+}
+
 // TestReportService_GenerateReport_Success tests successful PDF report generation
 func TestReportService_GenerateReport_Success(t *testing.T) {
 	t.Parallel()

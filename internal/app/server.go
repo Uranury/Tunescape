@@ -24,6 +24,7 @@ import (
 	"gitlab.com/Uranury/tunescape/internal/spotify"
 	"gitlab.com/Uranury/tunescape/internal/trends"
 	"gitlab.com/Uranury/tunescape/internal/user"
+	"gitlab.com/Uranury/tunescape/internal/worker"
 )
 
 type Server struct {
@@ -41,6 +42,7 @@ type Server struct {
 	playlistHandler    *playlist.Handler
 	authMiddleware     *middleware.Auth
 	rateLimiter        *middleware.RateLimiter
+	snapshotWorker     *worker.SnapshotWorker
 }
 
 func NewServer(
@@ -56,6 +58,7 @@ func NewServer(
 	playlistHandler *playlist.Handler,
 	authMiddleware *middleware.Auth,
 	rateLimiter *middleware.RateLimiter,
+	snapshotWorker *worker.SnapshotWorker,
 ) *Server {
 	router := gin.New()
 	router.Use(
@@ -84,6 +87,7 @@ func NewServer(
 		playlistHandler:    playlistHandler,
 		authMiddleware:     authMiddleware,
 		rateLimiter:        rateLimiter,
+		snapshotWorker:     snapshotWorker,
 		httpServer: &http.Server{
 			Addr:         deps.Config.ListenAddr,
 			Handler:      router,
@@ -99,6 +103,8 @@ func NewServer(
 
 func (s *Server) Run() error {
 	s.logger.Info("server starting", "addr", s.httpServer.Addr)
+	s.snapshotWorker.Start()
+	s.logger.Info("snapshot worker started")
 	if err := s.httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("server error: %w", err)
 	}
@@ -106,6 +112,7 @@ func (s *Server) Run() error {
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
+	s.snapshotWorker.Stop()
 	if s.httpServer == nil {
 		return nil
 	}
