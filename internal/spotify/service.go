@@ -18,6 +18,7 @@ type Service interface {
 	Disconnect(ctx context.Context, userID uuid.UUID) error
 	GetValidToken(ctx context.Context, userID uuid.UUID) (string, error)
 	GetTopTracks(ctx context.Context, userID uuid.UUID, limit int, timeRange TimeRange) ([]track.Track, error)
+	CreatePlaylist(ctx context.Context, userID uuid.UUID, name string, trackURIs []string) (*PlaylistResult, error)
 	UpsertTokens(ctx context.Context, userID uuid.UUID, accessToken, refreshToken string, expiresAt time.Time) error
 }
 
@@ -101,6 +102,24 @@ func (s *service) Disconnect(ctx context.Context, userID uuid.UUID) error {
 
 func (s *service) UpsertTokens(ctx context.Context, userID uuid.UUID, accessToken, refreshToken string, expiresAt time.Time) error {
 	return s.repo.UpsertTokens(ctx, userID, accessToken, refreshToken, expiresAt)
+}
+
+func (s *service) CreatePlaylist(ctx context.Context, userID uuid.UUID, name string, trackURIs []string) (*PlaylistResult, error) {
+	accessToken, err := s.GetValidToken(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := s.client.CreatePlaylist(ctx, accessToken, name)
+	if err != nil {
+		return nil, fmt.Errorf("create spotify playlist: %w", err)
+	}
+
+	if err := s.client.AddTracksToPlaylist(ctx, accessToken, result.ID, trackURIs); err != nil {
+		return nil, fmt.Errorf("add tracks to playlist: %w", err)
+	}
+
+	return result, nil
 }
 
 func (s *service) GetValidToken(ctx context.Context, userID uuid.UUID) (string, error) {

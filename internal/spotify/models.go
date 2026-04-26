@@ -34,3 +34,8 @@ func ParseTimeRange(s string) (TimeRange, error) {
 		return "", fmt.Errorf("invalid time_range %q: must be short_term, medium_term, or long_term", s)
 	}
 }
+
+type PlaylistResult struct {
+	ID          string
+	ExternalURL string
+}

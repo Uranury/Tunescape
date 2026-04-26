@@ -617,6 +617,22 @@ canvas { max-height: 320px; width: 100% !important; }
 .toast.error   { background: #7B1E18; }
 .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
+/* ── Playlist two-column layout ── */
+.playlist-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+.playlist-col-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 0.6rem;
+}
+
 /* ── Misc ── */
 .empty-state {
   text-align: center;
@@ -631,4 +647,5 @@ canvas { max-height: 320px; width: 100% !important; }
   .stats-row { grid-template-columns: 1fr 1fr; }
   .taste-grid { grid-template-columns: 1fr; }
   .content-area { padding: 12px; }
+  .playlist-columns { grid-template-columns: 1fr; }
 }

@@ -16,6 +16,7 @@ import (
 	"gitlab.com/Uranury/tunescape/internal/infra"
 	"gitlab.com/Uranury/tunescape/internal/leaderboard"
 	"gitlab.com/Uranury/tunescape/internal/middleware"
+	"gitlab.com/Uranury/tunescape/internal/playlist"
 	"gitlab.com/Uranury/tunescape/internal/reccobeats"
 	"gitlab.com/Uranury/tunescape/internal/report"
 	"gitlab.com/Uranury/tunescape/internal/snapshot"
@@ -57,6 +58,9 @@ func main() {
 	snapshotSvc := snapshot.NewService(snapshotRepo, spotifySvc, txProvider, redisCache, deps.Logger)
 	snapshotHandler := snapshot.NewHandler(snapshotSvc)
 
+	playlistSvc := playlist.NewService(snapshotSvc, spotifySvc)
+	playlistHandler := playlist.NewHandler(playlistSvc)
+
 	leaderboardStore := leaderboard.NewStore(deps.RedisClient)
 	leaderboardSvc := leaderboard.NewService(leaderboardStore, userRepo, redisCache)
 	leaderboardHandler := leaderboard.NewHandler(leaderboardSvc)
@@ -88,6 +92,7 @@ func main() {
 		trendsHandler,
 		reportHandler,
 		userHandler,
+		playlistHandler,
 		authMiddleware,
 		rateLimiter,
 	)

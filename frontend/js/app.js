@@ -6,23 +6,26 @@ import {
 } from './dashboard.js'
 import { analyzeTaste, loadTrends, downloadReport } from './analytics.js'
 import { loadLeaderboard } from './leaderboard.js'
+import { createPlaylist, loadPlaylistPreview } from './playlist.js'
 
 // Expose to inline HTML handlers
-window.login            = login
-window.signup           = signup
-window.logout           = logout
-window.showLoginForm    = showLoginForm
-window.showSignupForm   = showSignupForm
+window.login             = login
+window.signup            = signup
+window.logout            = logout
+window.showLoginForm     = showLoginForm
+window.showSignupForm    = showSignupForm
 window.navigateTo        = navigateTo
 window.captureSnapshot   = captureSnapshot
 window.selectSnapshot    = selectSnapshot
 window.setTrackLimit     = setTrackLimit
 window.connectSpotify    = connectSpotify
 window.disconnectSpotify = disconnectSpotify
-window.analyzeTaste     = analyzeTaste
-window.loadTrends       = loadTrends
-window.downloadReport   = downloadReport
-window.loadLeaderboard  = loadLeaderboard
+window.analyzeTaste      = analyzeTaste
+window.loadTrends        = loadTrends
+window.downloadReport    = downloadReport
+window.loadLeaderboard   = loadLeaderboard
+window.createPlaylist    = createPlaylist
+window.loadPlaylistPreview = loadPlaylistPreview
 
 async function checkOAuthCallback() {
   const params = new URLSearchParams(window.location.search)
@@ -32,11 +35,11 @@ async function checkOAuthCallback() {
     toast('Spotify connected! Loading your tracks…', 'success')
   } else if (error) {
     const msgs = {
-      not_logged_in:         'Please sign in first.',
-      session_expired:       'Session expired — sign in again.',
-      invalid_state:         'Security check failed.',
-      spotify_already_linked:'This Spotify account is already linked to another user.',
-      db_error:              'Server error — try again.',
+      not_logged_in:          'Please sign in first.',
+      session_expired:        'Session expired — sign in again.',
+      invalid_state:          'Security check failed.',
+      spotify_already_linked: 'This Spotify account is already linked to another user.',
+      db_error:               'Server error — try again.',
     }
     toast(msgs[error] || `OAuth error: ${error}`, 'error')
   }
@@ -53,6 +56,7 @@ async function init() {
     showDashboard()
     navigateTo('tracks')
     loadLeaderboard('valence')
+    loadPlaylistPreview()
   } else {
     showAuth()
   }

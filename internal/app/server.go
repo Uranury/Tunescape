@@ -18,6 +18,7 @@ import (
 	"gitlab.com/Uranury/tunescape/internal/infra"
 	"gitlab.com/Uranury/tunescape/internal/leaderboard"
 	"gitlab.com/Uranury/tunescape/internal/middleware"
+	"gitlab.com/Uranury/tunescape/internal/playlist"
 	"gitlab.com/Uranury/tunescape/internal/report"
 	"gitlab.com/Uranury/tunescape/internal/snapshot"
 	"gitlab.com/Uranury/tunescape/internal/spotify"
@@ -37,6 +38,7 @@ type Server struct {
 	trendsHandler      *trends.Handler
 	reportHandler      *report.Handler
 	userHandler        *user.Handler
+	playlistHandler    *playlist.Handler
 	authMiddleware     *middleware.Auth
 	rateLimiter        *middleware.RateLimiter
 }
@@ -51,6 +53,7 @@ func NewServer(
 	trendsHandler *trends.Handler,
 	reportHandler *report.Handler,
 	userHandler *user.Handler,
+	playlistHandler *playlist.Handler,
 	authMiddleware *middleware.Auth,
 	rateLimiter *middleware.RateLimiter,
 ) *Server {
@@ -78,6 +81,7 @@ func NewServer(
 		trendsHandler:      trendsHandler,
 		reportHandler:      reportHandler,
 		userHandler:        userHandler,
+		playlistHandler:    playlistHandler,
 		authMiddleware:     authMiddleware,
 		rateLimiter:        rateLimiter,
 		httpServer: &http.Server{
@@ -139,6 +143,7 @@ func (s *Server) registerRoutes() {
 		meGroup.GET("/snapshots/:id", s.snapshotHandler.GetSnapshot)
 		meGroup.GET("/trends", s.trendsHandler.GetTrends)
 		meGroup.GET("/report", s.reportHandler.GetReport)
+		meGroup.POST("/playlists/top-tracks", s.playlistHandler.CreateFromSnapshot)
 	}
 
 	analyticsGroup := s.router.Group("/analytics", s.authMiddleware.JWTAuth())
