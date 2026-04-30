@@ -19,6 +19,7 @@ type Repository interface {
 	FindByID(ctx context.Context, userID uuid.UUID) (*User, error)
 	FindDisplayName(ctx context.Context, userID uuid.UUID) (string, error)
 	FindDisplayNamesByIDs(ctx context.Context, userIDs []string) (map[string]string, error)
+	FindAll(ctx context.Context) ([]User, error)
 }
 
 type repository struct {
@@ -131,4 +132,13 @@ func (r *repository) FindDisplayNamesByIDs(ctx context.Context, userIDs []string
 		result[row.ID] = row.DisplayName
 	}
 	return result, nil
+}
+
+func (r *repository) FindAll(ctx context.Context) ([]User, error) {
+	query := `SELECT * FROM users WHERE is_deleted = FALSE ORDER BY created_at DESC`
+	var users []User
+	if err := r.exec.SelectContext(ctx, &users, query); err != nil {
+		return nil, err
+	}
+	return users, nil
 }
