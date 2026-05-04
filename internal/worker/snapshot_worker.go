@@ -15,14 +15,14 @@ import (
 
 // SnapshotWorker creates snapshots for all users on a schedule
 type SnapshotWorker struct {
-	userRepo       user.Repository
-	snapshotSvc    snapshot.Service
-	txProvider     database.TxProvider
-	logger         *slog.Logger
-	interval       time.Duration
-	ctx            context.Context
-	cancel         context.CancelFunc
-	done           chan struct{}
+	userRepo    user.Repository
+	snapshotSvc snapshot.Service
+	txProvider  database.TxProvider
+	logger      *slog.Logger
+	interval    time.Duration
+	ctx         context.Context
+	cancel      context.CancelFunc
+	done        chan struct{}
 }
 
 // NewSnapshotWorker creates a new snapshot worker
@@ -60,6 +60,11 @@ func (w *SnapshotWorker) Stop() {
 }
 
 func (w *SnapshotWorker) run() {
+	defer func() {
+		if err := recover(); err != nil {
+			w.logger.Error("snapshot worker panicked", "err", err)
+		}
+	}()
 	defer close(w.done)
 
 	ticker := time.NewTicker(w.interval)
