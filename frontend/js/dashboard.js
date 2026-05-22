@@ -21,6 +21,10 @@ export async function navigateTo(panelId) {
         const { loadPlaylistPreview } = await import('./playlist.js')
         await loadPlaylistPreview()
     }
+    if (panelId === 'friends') {
+        const { loadFriendsPanel } = await import('./friends.js')
+        await loadFriendsPanel()
+    }
 }
 
 export async function loadUserData() {

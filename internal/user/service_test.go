@@ -70,6 +70,14 @@ func (m *mockUserRepo) ClearSpotify(ctx context.Context, userID uuid.UUID) error
 	return nil
 }
 
+func (m *mockUserRepo) FindByDisplayName(ctx context.Context, displayName string) (*User, error) {
+	return nil, nil
+}
+
+func (m *mockUserRepo) FindAvatarURLsByIDs(_ context.Context, _ []string) (map[string]*string, error) {
+	return map[string]*string{}, nil
+}
+
 func (m *mockUserRepo) FindAll(ctx context.Context) ([]User, error) {
 	return nil, nil
 }

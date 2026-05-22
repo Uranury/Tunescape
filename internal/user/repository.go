@@ -17,8 +17,10 @@ type Repository interface {
 	Create(ctx context.Context, u *User) error
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByID(ctx context.Context, userID uuid.UUID) (*User, error)
+	FindByDisplayName(ctx context.Context, displayName string) (*User, error)
 	FindDisplayName(ctx context.Context, userID uuid.UUID) (string, error)
 	FindDisplayNamesByIDs(ctx context.Context, userIDs []string) (map[string]string, error)
+	FindAvatarURLsByIDs(ctx context.Context, userIDs []string) (map[string]*string, error)
 	FindAll(ctx context.Context) ([]User, error)
 }
 
@@ -103,6 +105,21 @@ func (r *repository) FindByID(ctx context.Context, userID uuid.UUID) (*User, err
 	return u, nil
 }
 
+func (r *repository) FindByDisplayName(ctx context.Context, displayName string) (*User, error) {
+	u := &User{}
+	err := r.exec.QueryRowxContext(ctx,
+		`SELECT * FROM users WHERE LOWER(display_name) = LOWER($1) AND is_deleted = FALSE`,
+		displayName,
+	).StructScan(u)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, apperrors.ErrNotFound
+		}
+		return nil, err
+	}
+	return u, nil
+}
+
 func (r *repository) FindDisplayName(ctx context.Context, userID uuid.UUID) (string, error) {
 	var name string
 	err := r.exec.QueryRowxContext(ctx, `SELECT display_name FROM users WHERE id = $1 AND is_deleted = FALSE`, userID).Scan(&name)
@@ -130,6 +147,26 @@ func (r *repository) FindDisplayNamesByIDs(ctx context.Context, userIDs []string
 	result := make(map[string]string, len(rows))
 	for _, row := range rows {
 		result[row.ID] = row.DisplayName
+	}
+	return result, nil
+}
+
+func (r *repository) FindAvatarURLsByIDs(ctx context.Context, userIDs []string) (map[string]*string, error) {
+	if len(userIDs) == 0 {
+		return map[string]*string{}, nil
+	}
+	var rows []struct {
+		ID        string  `db:"id"`
+		AvatarURL *string `db:"avatar_url"`
+	}
+	if err := r.exec.SelectContext(ctx, &rows,
+		`SELECT id::text AS id, avatar_url FROM users WHERE id::text = ANY($1)`,
+		pq.Array(userIDs)); err != nil {
+		return nil, err
+	}
+	result := make(map[string]*string, len(rows))
+	for _, row := range rows {
+		result[row.ID] = row.AvatarURL
 	}
 	return result, nil
 }

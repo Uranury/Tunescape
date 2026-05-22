@@ -7,6 +7,11 @@ import {
 import { analyzeTaste, loadTrends, downloadReport } from './analytics.js'
 import { loadLeaderboard } from './leaderboard.js'
 import { createPlaylist, loadPlaylistPreview } from './playlist.js'
+import {
+  loadFriendsPanel, lookupUser, sendFriendRequest,
+  loadIncomingRequests, acceptRequest, rejectRequest,
+  loadFriendsList, compareTastes, closeCompare,
+} from './friends.js'
 
 // Expose to inline HTML handlers
 window.login             = login
@@ -26,6 +31,20 @@ window.downloadReport    = downloadReport
 window.loadLeaderboard   = loadLeaderboard
 window.createPlaylist    = createPlaylist
 window.loadPlaylistPreview = loadPlaylistPreview
+window.lookupUser        = lookupUser
+window.sendFriendRequest = sendFriendRequest
+window.loadIncomingRequests = loadIncomingRequests
+window.acceptRequest     = acceptRequest
+window.rejectRequest     = rejectRequest
+window.loadFriendsList   = loadFriendsList
+window.compareTastes     = compareTastes
+window.closeCompare      = closeCompare
+
+// Friends panel — bind static controls directly (avoids window-lookup timing issues)
+document.getElementById('friends-search-btn').addEventListener('click', lookupUser)
+document.getElementById('friends-lookup-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') lookupUser()
+})
 
 async function checkOAuthCallback() {
   const params = new URLSearchParams(window.location.search)

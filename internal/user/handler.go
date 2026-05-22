@@ -49,3 +49,32 @@ func (h *Handler) GetProfile(c *gin.Context) {
 
 	c.JSON(http.StatusOK, profile)
 }
+
+// @Summary      Look up a user by exact email
+// @Tags         user
+// @Produce      json
+// @Security     BearerAuth
+// @Param        email query string true "Exact email address"
+// @Success      200  {object}  LookupResult
+// @Failure      400  {object}  apperrors.HTTPError
+// @Failure      404  {object}  apperrors.HTTPError
+// @Router       /users/lookup [get]
+func (h *Handler) LookupUser(c *gin.Context) {
+	email := c.Query("email")
+	if email == "" {
+		apperrors.GenHTTPError(c, http.StatusBadRequest, "email is required", nil)
+		return
+	}
+
+	result, err := h.svc.LookupByEmail(c.Request.Context(), email)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrNotFound) {
+			apperrors.GenHTTPError(c, http.StatusNotFound, "user not found", nil)
+			return
+		}
+		apperrors.GenHTTPError(c, http.StatusInternalServerError, "internal error", nil)
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}

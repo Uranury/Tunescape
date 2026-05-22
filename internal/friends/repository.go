@@ -113,7 +113,8 @@ func (r *repository) ListFriends(ctx context.Context, userID uuid.UUID) ([]Frien
 		SELECT u.id AS user_id,
 		       u.display_name,
 		       u.spotify_id IS NOT NULL AS spotify_connected,
-		       u.spotify_id
+		       u.spotify_id,
+		       u.avatar_url
 		FROM friends f
 		JOIN users u ON u.id = f.friend_id
 		WHERE f.user_id = $1

@@ -90,6 +90,10 @@
 				<span class="nav-icon">🎵</span>
 				<span class="nav-label">Playlists</span>
 			</div>
+			<div class="nav-item" data-panel="friends" onclick="navigateTo('friends')">
+				<span class="nav-icon">👥</span>
+				<span class="nav-label">Friends</span>
+			</div>
 		</nav>
 
 		<div class="sidebar-footer">
@@ -270,6 +274,56 @@
 						</div>
 					</div>
 				</div>
+			</div>
+
+			<!-- ── Panel: Friends ── -->
+			<div id="panel-friends" class="panel">
+
+				<!-- Lookup -->
+				<div class="card">
+					<div class="card-header">
+						<span class="card-title">Find a User</span>
+					</div>
+					<div class="friends-lookup-row">
+						<input type="email" id="friends-lookup-input"
+							   class="friends-lookup-input"
+							   placeholder="Enter exact email address" />
+						<button id="friends-search-btn" class="btn btn-primary btn-sm" style="width:auto;flex-shrink:0">Search</button>
+					</div>
+					<div id="friends-lookup-result"></div>
+				</div>
+
+				<!-- Incoming requests -->
+				<div class="card">
+					<div class="card-header">
+						<span class="card-title">Incoming Requests</span>
+						<button class="btn btn-ghost btn-sm" onclick="loadIncomingRequests()">Refresh</button>
+					</div>
+					<div id="friends-requests-list">
+						<p class="empty-state">No pending requests.</p>
+					</div>
+				</div>
+
+				<!-- Friends list -->
+				<div class="card">
+					<div class="card-header">
+						<span class="card-title">My Friends</span>
+						<button class="btn btn-ghost btn-sm" onclick="loadFriendsList()">Refresh</button>
+					</div>
+					<div id="friends-list">
+						<p class="empty-state">No friends yet — find someone above.</p>
+					</div>
+				</div>
+
+				<!-- Compare tastes -->
+				<div id="friends-compare-card" class="card" style="display:none">
+					<div class="card-header">
+						<span class="card-title" id="friends-compare-title">Taste Comparison</span>
+						<button class="btn btn-ghost btn-sm" onclick="closeCompare()">Close</button>
+					</div>
+					<div id="friends-compare-content"></div>
+				</div>
+
 			</div>
 
 		</div><!-- /content-area -->

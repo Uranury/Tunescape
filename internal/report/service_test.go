@@ -71,6 +71,14 @@ func (m *mockUserRepository) FindAll(ctx context.Context) ([]user.User, error) {
 	return nil, nil
 }
 
+func (m *mockUserRepository) FindByDisplayName(_ context.Context, _ string) (*user.User, error) {
+	return nil, nil
+}
+
+func (m *mockUserRepository) FindAvatarURLsByIDs(_ context.Context, _ []string) (map[string]*string, error) {
+	return map[string]*string{}, nil
+}
+
 // TestReportService_GenerateReport_Success tests successful PDF report generation
 func TestReportService_GenerateReport_Success(t *testing.T) {
 	t.Parallel()

@@ -98,6 +98,10 @@ func (s *service) GetLeaderboard(ctx context.Context, feature string, limit, off
 	if err != nil {
 		return nil, fmt.Errorf("resolve display names: %w", err)
 	}
+	avatars, err := s.userRepo.FindAvatarURLsByIDs(ctx, userIDs)
+	if err != nil {
+		return nil, fmt.Errorf("resolve avatars: %w", err)
+	}
 	resp := &LeaderboardResponse{
 		Feature: feature,
 		Entries: make([]Entry, len(entries)),
@@ -108,6 +112,7 @@ func (s *service) GetLeaderboard(ctx context.Context, feature string, limit, off
 			Rank:        int(offset) + i + 1,
 			UserID:      uid,
 			DisplayName: names[uid],
+			AvatarURL:   avatars[uid],
 			Score:       e.Score,
 		}
 	}

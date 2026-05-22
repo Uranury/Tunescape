@@ -16,10 +16,11 @@ type FriendRequest struct {
 }
 
 type FriendProfile struct {
-	UserID           uuid.UUID `json:"user_id"`
-	DisplayName      string    `json:"display_name"`
-	SpotifyConnected bool      `json:"spotify_connected"`
-	SpotifyID        *string   `json:"spotify_id,omitempty"`
+	UserID           uuid.UUID `json:"user_id"               db:"user_id"`
+	DisplayName      string    `json:"display_name"          db:"display_name"`
+	SpotifyConnected bool      `json:"spotify_connected"     db:"spotify_connected"`
+	SpotifyID        *string   `json:"spotify_id,omitempty"  db:"spotify_id"`
+	AvatarURL        *string   `json:"avatar_url,omitempty"  db:"avatar_url"`
 }
 
 type IncomingRequest struct {

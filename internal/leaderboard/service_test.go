@@ -65,6 +65,14 @@ func (m *mockUserRepo) FindAll(ctx context.Context) ([]user.User, error) {
 	return nil, nil
 }
 
+func (m *mockUserRepo) FindByDisplayName(_ context.Context, _ string) (*user.User, error) {
+	return nil, nil
+}
+
+func (m *mockUserRepo) FindAvatarURLsByIDs(_ context.Context, _ []string) (map[string]*string, error) {
+	return map[string]*string{}, nil
+}
+
 type mockCache struct {
 	getFn    func(ctx context.Context, key string) ([]byte, error)
 	setFn    func(ctx context.Context, key string, data []byte, ttl time.Duration) error

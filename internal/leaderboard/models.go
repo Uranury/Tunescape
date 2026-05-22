@@ -4,6 +4,7 @@ type Entry struct {
 	Rank        int     `json:"rank"`
 	UserID      string  `json:"user_id"`
 	DisplayName string  `json:"display_name"`
+	AvatarURL   *string `json:"avatar_url"`
 	Score       float64 `json:"score"`
 }
 

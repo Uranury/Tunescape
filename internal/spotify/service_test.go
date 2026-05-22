@@ -64,6 +64,14 @@ func (m *mockUserRepo) FindAll(_ context.Context) ([]user.User, error) {
 	return nil, nil
 }
 
+func (m *mockUserRepo) FindByDisplayName(_ context.Context, _ string) (*user.User, error) {
+	return nil, nil
+}
+
+func (m *mockUserRepo) FindAvatarURLsByIDs(_ context.Context, _ []string) (map[string]*string, error) {
+	return map[string]*string{}, nil
+}
+
 type roundTripperFunc func(req *http.Request) (*http.Response, error)
 
 func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }

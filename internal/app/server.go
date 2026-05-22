@@ -164,6 +164,11 @@ func (s *Server) registerRoutes() {
 
 	s.router.GET("/leaderboards/:feature", s.rateLimiter.PerIP(), s.leaderboardHandler.GetLeaderboard)
 
+	usersGroup := s.router.Group("/users", s.authMiddleware.JWTAuth())
+	{
+		usersGroup.GET("/lookup", s.userHandler.LookupUser)
+	}
+
 	friendsGroup := s.router.Group("/friends", s.authMiddleware.JWTAuth())
 	{
 		friendsGroup.POST("/requests", s.friendHandler.SendRequest)
