@@ -1,6 +1,38 @@
 basePath: /
 definitions:
-  analytics.AudioFeatureAverages:
+  gitlab_com_Uranury_tunescape_internal_playlist.Playlist:
+    properties:
+      created_at:
+        type: string
+      embed_url:
+        type: string
+      external_url:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  gitlab_com_Uranury_tunescape_internal_track.Track:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      popularity:
+        type: integer
+      spotify_id:
+        type: string
+    type: object
+  gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError:
+    properties:
+      code:
+        type: integer
+      details: {}
+      message:
+        type: string
+    type: object
+  internal_analytics.AudioFeatureAverages:
     properties:
       acousticness:
         type: number
@@ -21,24 +53,16 @@ definitions:
       valence:
         type: number
     type: object
-  analytics.MusicTasteResponse:
+  internal_analytics.MusicTasteResponse:
     properties:
       averages:
-        $ref: '#/definitions/analytics.AudioFeatureAverages'
+        $ref: '#/definitions/internal_analytics.AudioFeatureAverages'
       snapshot_id:
         type: string
       tracks_count:
         type: integer
     type: object
-  apperrors.HTTPError:
-    properties:
-      code:
-        type: integer
-      details: {}
-      message:
-        type: string
-    type: object
-  auth.loginRequest:
+  internal_auth.loginRequest:
     properties:
       email:
         type: string
@@ -49,7 +73,7 @@ definitions:
     - email
     - password
     type: object
-  auth.signupRequest:
+  internal_auth.signupRequest:
     properties:
       display_name:
         minLength: 1
@@ -64,12 +88,61 @@ definitions:
     - email
     - password
     type: object
-  auth.tokenResponse:
+  internal_auth.tokenResponse:
     properties:
       access_token:
         type: string
     type: object
-  leaderboard.Entry:
+  internal_friends.FriendProfile:
+    properties:
+      display_name:
+        type: string
+      spotify_connected:
+        type: boolean
+      spotify_id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  internal_friends.IncomingRequest:
+    properties:
+      created_at:
+        type: string
+      display_name:
+        type: string
+      request_id:
+        type: integer
+      sender_id:
+        type: string
+    type: object
+  internal_friends.TasteComparison:
+    properties:
+      compatibility_score:
+        type: number
+      mine:
+        $ref: '#/definitions/internal_friends.TasteScores'
+      theirs:
+        $ref: '#/definitions/internal_friends.TasteScores'
+    type: object
+  internal_friends.TasteScores:
+    properties:
+      acousticness:
+        type: number
+      danceability:
+        type: number
+      energy:
+        type: number
+      valence:
+        type: number
+    type: object
+  internal_friends.sendRequestBody:
+    properties:
+      receiver_id:
+        type: string
+    required:
+    - receiver_id
+    type: object
+  internal_leaderboard.Entry:
     properties:
       display_name:
         type: string
@@ -80,16 +153,27 @@ definitions:
       user_id:
         type: string
     type: object
-  leaderboard.LeaderboardResponse:
+  internal_leaderboard.LeaderboardResponse:
     properties:
       entries:
         items:
-          $ref: '#/definitions/leaderboard.Entry'
+          $ref: '#/definitions/internal_leaderboard.Entry'
         type: array
       feature:
         type: string
     type: object
-  snapshot.Snapshot:
+  internal_playlist.Response:
+    properties:
+      embed_url:
+        type: string
+      external_url:
+        type: string
+      name:
+        type: string
+      playlist_id:
+        type: string
+    type: object
+  internal_snapshot.Snapshot:
     properties:
       created_at:
         type: string
@@ -97,12 +181,12 @@ definitions:
         type: string
       tracks:
         items:
-          $ref: '#/definitions/track.Track'
+          $ref: '#/definitions/gitlab_com_Uranury_tunescape_internal_track.Track'
         type: array
       user_id:
         type: string
     type: object
-  snapshot.SnapshotSummary:
+  internal_snapshot.SnapshotSummary:
     properties:
       created_at:
         type: string
@@ -111,18 +195,7 @@ definitions:
       user_id:
         type: string
     type: object
-  track.Track:
-    properties:
-      id:
-        type: string
-      name:
-        type: string
-      popularity:
-        type: integer
-      spotify_id:
-        type: string
-    type: object
-  trends.SnapshotPoint:
+  internal_trends.SnapshotPoint:
     properties:
       acousticness:
         type: number
@@ -149,16 +222,16 @@ definitions:
       valence:
         type: number
     type: object
-  trends.TrendsResponse:
+  internal_trends.TrendsResponse:
     properties:
       points:
         items:
-          $ref: '#/definitions/trends.SnapshotPoint'
+          $ref: '#/definitions/internal_trends.SnapshotPoint'
         type: array
       user_id:
         type: string
     type: object
-  user.ProfileResponse:
+  internal_user.ProfileResponse:
     properties:
       avatar_url:
         type: string
@@ -184,19 +257,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/analytics.MusicTasteResponse'
+            $ref: '#/definitions/internal_analytics.MusicTasteResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
         "404":
           description: No snapshot found for user
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
       summary: Get music taste based on top tracks
       tags:
       - analytics
@@ -212,22 +285,22 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/auth.loginRequest'
+          $ref: '#/definitions/internal_auth.loginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/auth.tokenResponse'
+            $ref: '#/definitions/internal_auth.tokenResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
       summary: Login
       tags:
       - auth
@@ -265,15 +338,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/auth.tokenResponse'
+            $ref: '#/definitions/internal_auth.tokenResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
       summary: Refresh access token
       tags:
       - auth
@@ -289,22 +362,22 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/auth.signupRequest'
+          $ref: '#/definitions/internal_auth.signupRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/auth.tokenResponse'
+            $ref: '#/definitions/internal_auth.tokenResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
       summary: Signup
       tags:
       - auth
@@ -349,6 +422,232 @@ paths:
       summary: Spotify OAuth login
       tags:
       - spotify
+  /friends:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_friends.FriendProfile'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: List friends
+      tags:
+      - friends
+  /friends/{friend_id}/compare:
+    get:
+      description: Returns averaged audio feature scores and a 0–100 compatibility
+        score. Returns 422 if the friend has no listening data yet.
+      parameters:
+      - description: Friend's user ID
+        in: path
+        name: friend_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_friends.TasteComparison'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Compare music tastes with a friend
+      tags:
+      - friends
+  /friends/{friend_id}/playlists:
+    get:
+      description: Returns playlists created via Tunescape. Returns 422 if the friend
+        has not connected Spotify yet.
+      parameters:
+      - description: Friend's user ID
+        in: path
+        name: friend_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_Uranury_tunescape_internal_playlist.Playlist'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Get a friend's playlists
+      tags:
+      - friends
+  /friends/requests:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_friends.IncomingRequest'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: List incoming friend requests
+      tags:
+      - friends
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: receiver
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_friends.sendRequestBody'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Send a friend request
+      tags:
+      - friends
+  /friends/requests/{id}/accept:
+    post:
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Accept a friend request
+      tags:
+      - friends
+  /friends/requests/{id}/reject:
+    post:
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Reject a friend request
+      tags:
+      - friends
   /leaderboards/{feature}:
     get:
       description: 'Returns the top-ranked users for a given audio feature. Valid
@@ -378,14 +677,47 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/leaderboard.LeaderboardResponse'
+            $ref: '#/definitions/internal_leaderboard.LeaderboardResponse'
         "400":
           description: Invalid feature
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
       summary: Get global leaderboard
       tags:
       - leaderboards
+  /me/playlists/top-tracks:
+    post:
+      description: Creates a private Spotify playlist containing all tracks from the
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_playlist.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "404":
+          description: No snapshot found — create one first
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "422":
+          description: Spotify account not connected
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "502":
+          description: Spotify temporarily unavailable
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+      summary: Create Spotify playlist from latest snapshot
+      tags:
+      - playlists
   /me/profile:
     get:
       description: Returns the authenticated user's display name, email, avatar, and
@@ -396,15 +728,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/user.ProfileResponse'
+            $ref: '#/definitions/internal_user.ProfileResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
       summary: Get current user profile
       tags:
       - user
@@ -422,15 +754,15 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
         "404":
           description: User not found
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
       security:
       - BearerAuth: []
       summary: Download PDF report
@@ -447,40 +779,58 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/snapshot.SnapshotSummary'
+              $ref: '#/definitions/internal_snapshot.SnapshotSummary'
             type: array
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
       summary: List snapshots
       tags:
       - snapshots
     post:
       description: Fetches the authenticated user's top 50 tracks from Spotify,
+      parameters:
+      - default: medium_term
+        description: Time range for top tracks (short_term | medium_term | long_term)
+        enum:
+        - short_term
+        - medium_term
+        - long_term
+        in: query
+        name: time_range
+        type: string
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/snapshot.Snapshot'
+            $ref: '#/definitions/internal_snapshot.Snapshot'
+        "400":
+          description: Invalid time_range value
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
         "422":
           description: Spotify account not connected
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
+        "502":
+          description: Spotify temporarily unavailable
+          schema:
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
       summary: Create top-tracks snapshot
       tags:
       - snapshots
@@ -500,23 +850,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/snapshot.Snapshot'
+            $ref: '#/definitions/internal_snapshot.Snapshot'
         "400":
           description: Invalid UUID
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
       summary: Get snapshot by ID
       tags:
       - snapshots
@@ -532,11 +882,11 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
       summary: Disconnect Spotify account
       tags:
       - spotify
@@ -550,18 +900,24 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/trends.TrendsResponse'
+            $ref: '#/definitions/internal_trends.TrendsResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apperrors.HTTPError'
+            $ref: '#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError'
       security:
       - BearerAuth: []
       summary: Get listening trends
       tags:
       - trends
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

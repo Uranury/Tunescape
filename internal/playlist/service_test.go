@@ -53,6 +53,22 @@ func (m *mockSpotifyService) UpsertTokens(_ context.Context, _ uuid.UUID, _, _ s
 	return nil
 }
 
+type mockPlaylistRepo struct {
+	insertFn func(ctx context.Context, userID uuid.UUID, p *Playlist) error
+}
+
+func (m *mockPlaylistRepo) Insert(ctx context.Context, userID uuid.UUID, p *Playlist) error {
+	if m.insertFn != nil {
+		return m.insertFn(ctx, userID, p)
+	}
+	p.CreatedAt = time.Now().UTC()
+	return nil
+}
+
+func (m *mockPlaylistRepo) ListByUserID(_ context.Context, _ uuid.UUID) ([]Playlist, error) {
+	return nil, nil
+}
+
 func makeSnapshot(trackCount int) *snapshot.Snapshot {
 	tracks := make([]track.Track, trackCount)
 	for i := range tracks {
@@ -103,7 +119,7 @@ func TestPlaylistService_CreateFromLatestSnapshot_Success(t *testing.T) {
 		},
 	}
 
-	svc := NewService(snapshotSvc, spotifySvc)
+	svc := NewService(&mockPlaylistRepo{}, snapshotSvc, spotifySvc)
 	resp, err := svc.CreateFromLatestSnapshot(ctx, userID)
 
 	if err != nil {
@@ -151,7 +167,7 @@ func TestPlaylistService_CreateFromLatestSnapshot_NoSnapshot(t *testing.T) {
 		},
 	}
 
-	svc := NewService(snapshotSvc, spotifySvc)
+	svc := NewService(&mockPlaylistRepo{}, snapshotSvc, spotifySvc)
 	resp, err := svc.CreateFromLatestSnapshot(context.Background(), uuid.New())
 
 	if err == nil {
@@ -182,7 +198,7 @@ func TestPlaylistService_CreateFromLatestSnapshot_SpotifyError(t *testing.T) {
 		},
 	}
 
-	svc := NewService(snapshotSvc, spotifySvc)
+	svc := NewService(&mockPlaylistRepo{}, snapshotSvc, spotifySvc)
 	resp, err := svc.CreateFromLatestSnapshot(context.Background(), uuid.New())
 
 	if err == nil {
@@ -215,7 +231,7 @@ func TestPlaylistService_CreateFromLatestSnapshot_UpstreamUnavailable(t *testing
 		},
 	}
 
-	svc := NewService(snapshotSvc, spotifySvc)
+	svc := NewService(&mockPlaylistRepo{}, snapshotSvc, spotifySvc)
 	_, err := svc.CreateFromLatestSnapshot(context.Background(), uuid.New())
 
 	if !errors.Is(err, apperrors.ErrUpstreamUnavailable) {

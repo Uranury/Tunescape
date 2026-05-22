@@ -16,6 +16,7 @@ import (
 	"gitlab.com/Uranury/tunescape/internal/infra"
 	"gitlab.com/Uranury/tunescape/internal/leaderboard"
 	"gitlab.com/Uranury/tunescape/internal/middleware"
+	"gitlab.com/Uranury/tunescape/internal/friends"
 	"gitlab.com/Uranury/tunescape/internal/playlist"
 	"gitlab.com/Uranury/tunescape/internal/reccobeats"
 	"gitlab.com/Uranury/tunescape/internal/report"
@@ -31,6 +32,10 @@ import (
 // @version 1.0
 // @description Tunescape backend API.
 // @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 func main() {
 	deps, cleanup, err := infra.New(context.Background())
 	if err != nil {
@@ -59,7 +64,8 @@ func main() {
 	snapshotSvc := snapshot.NewService(snapshotRepo, spotifySvc, txProvider, redisCache, deps.Logger)
 	snapshotHandler := snapshot.NewHandler(snapshotSvc)
 
-	playlistSvc := playlist.NewService(snapshotSvc, spotifySvc)
+	playlistRepo := playlist.NewRepository(deps.DBConn)
+	playlistSvc := playlist.NewService(playlistRepo, snapshotSvc, spotifySvc)
 	playlistHandler := playlist.NewHandler(playlistSvc)
 	snapshotWorker := worker.NewSnapshotWorker(userRepo, snapshotSvc, txProvider, deps.Logger, 24*time.Hour)
 
@@ -72,6 +78,10 @@ func main() {
 	analyticsRepo := analytics.NewRepository(deps.DBConn)
 	analyticsSvc := analytics.NewService(analyticsRepo, reccobeatsService, txProvider, deps.Logger, redisCache, leaderboardSvc)
 	analyticsHandler := analytics.NewHandler(analyticsSvc)
+
+	friendRepo := friends.NewRepository(deps.DBConn)
+	friendSvc := friends.NewService(friendRepo, snapshotSvc, analyticsRepo, playlistSvc, txProvider, deps.Logger)
+	friendHandler := friends.NewHandler(friendSvc)
 
 	trendsRepo := trends.NewRepository(deps.DBConn)
 	trendsSvc := trends.NewService(trendsRepo)
@@ -95,6 +105,7 @@ func main() {
 		reportHandler,
 		userHandler,
 		playlistHandler,
+		friendHandler,
 		authMiddleware,
 		rateLimiter,
 		snapshotWorker,

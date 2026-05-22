@@ -15,6 +15,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"gitlab.com/Uranury/tunescape/internal/analytics"
 	"gitlab.com/Uranury/tunescape/internal/auth"
+	"gitlab.com/Uranury/tunescape/internal/friends"
 	"gitlab.com/Uranury/tunescape/internal/infra"
 	"gitlab.com/Uranury/tunescape/internal/leaderboard"
 	"gitlab.com/Uranury/tunescape/internal/middleware"
@@ -40,6 +41,7 @@ type Server struct {
 	reportHandler      *report.Handler
 	userHandler        *user.Handler
 	playlistHandler    *playlist.Handler
+	friendHandler      *friends.Handler
 	authMiddleware     *middleware.Auth
 	rateLimiter        *middleware.RateLimiter
 	snapshotWorker     *worker.SnapshotWorker
@@ -56,6 +58,7 @@ func NewServer(
 	reportHandler *report.Handler,
 	userHandler *user.Handler,
 	playlistHandler *playlist.Handler,
+	friendHandler *friends.Handler,
 	authMiddleware *middleware.Auth,
 	rateLimiter *middleware.RateLimiter,
 	snapshotWorker *worker.SnapshotWorker,
@@ -85,6 +88,7 @@ func NewServer(
 		reportHandler:      reportHandler,
 		userHandler:        userHandler,
 		playlistHandler:    playlistHandler,
+		friendHandler:      friendHandler,
 		authMiddleware:     authMiddleware,
 		rateLimiter:        rateLimiter,
 		snapshotWorker:     snapshotWorker,
@@ -159,4 +163,15 @@ func (s *Server) registerRoutes() {
 	}
 
 	s.router.GET("/leaderboards/:feature", s.rateLimiter.PerIP(), s.leaderboardHandler.GetLeaderboard)
+
+	friendsGroup := s.router.Group("/friends", s.authMiddleware.JWTAuth())
+	{
+		friendsGroup.POST("/requests", s.friendHandler.SendRequest)
+		friendsGroup.GET("/requests", s.friendHandler.ListIncoming)
+		friendsGroup.POST("/requests/:id/accept", s.friendHandler.AcceptRequest)
+		friendsGroup.POST("/requests/:id/reject", s.friendHandler.RejectRequest)
+		friendsGroup.GET("", s.friendHandler.ListFriends)
+		friendsGroup.GET("/:friend_id/compare", s.friendHandler.CompareTastes)
+		friendsGroup.GET("/:friend_id/playlists", s.friendHandler.GetFriendPlaylists)
+	}
 }

@@ -11,16 +11,19 @@ import (
 
 type Service interface {
 	CreateFromLatestSnapshot(ctx context.Context, userID uuid.UUID) (*Response, error)
+	ListByUserID(ctx context.Context, userID uuid.UUID) ([]Playlist, error)
 }
 
 type service struct {
+	repo        Repository
 	snapshotSvc snapshot.Service
 	spotifySvc  spotify.Service
 }
 
-func NewService(snapshotSvc snapshot.Service, spotifySvc spotify.Service) Service {
-	return &service{snapshotSvc: snapshotSvc, spotifySvc: spotifySvc}
+func NewService(repo Repository, snapshotSvc snapshot.Service, spotifySvc spotify.Service) Service {
+	return &service{repo: repo, snapshotSvc: snapshotSvc, spotifySvc: spotifySvc}
 }
+
 func (s *service) CreateFromLatestSnapshot(ctx context.Context, userID uuid.UUID) (*Response, error) {
 	snap, err := s.snapshotSvc.GetLatestSnapshot(ctx, userID)
 	if err != nil {
@@ -53,10 +56,25 @@ func (s *service) CreateFromLatestSnapshot(ctx context.Context, userID uuid.UUID
 		return nil, fmt.Errorf("create spotify playlist: %w", err)
 	}
 
+	embedURL := "https://open.spotify.com/embed/playlist/" + result.ID
+	p := &Playlist{
+		SpotifyPlaylistID: result.ID,
+		Name:              name,
+		ExternalURL:       result.ExternalURL,
+		EmbedURL:          embedURL,
+	}
+	if err := s.repo.Insert(ctx, userID, p); err != nil {
+		return nil, fmt.Errorf("persist playlist: %w", err)
+	}
+
 	return &Response{
 		PlaylistID:  result.ID,
 		Name:        name,
 		ExternalURL: result.ExternalURL,
-		EmbedURL:    "https://open.spotify.com/embed/playlist/" + result.ID,
+		EmbedURL:    embedURL,
 	}, nil
+}
+
+func (s *service) ListByUserID(ctx context.Context, userID uuid.UUID) ([]Playlist, error) {
+	return s.repo.ListByUserID(ctx, userID)
 }

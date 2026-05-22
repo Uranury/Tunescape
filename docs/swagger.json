@@ -22,25 +22,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/analytics.MusicTasteResponse"
+                            "$ref": "#/definitions/internal_analytics.MusicTasteResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     },
                     "404": {
                         "description": "No snapshot found for user",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     }
                 }
@@ -66,7 +66,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/auth.loginRequest"
+                            "$ref": "#/definitions/internal_auth.loginRequest"
                         }
                     }
                 ],
@@ -74,19 +74,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/auth.tokenResponse"
+                            "$ref": "#/definitions/internal_auth.tokenResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     }
                 }
@@ -143,19 +143,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/auth.tokenResponse"
+                            "$ref": "#/definitions/internal_auth.tokenResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     }
                 }
@@ -181,7 +181,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/auth.signupRequest"
+                            "$ref": "#/definitions/internal_auth.signupRequest"
                         }
                     }
                 ],
@@ -189,19 +189,19 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/auth.tokenResponse"
+                            "$ref": "#/definitions/internal_auth.tokenResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     }
                 }
@@ -265,6 +265,362 @@
                 }
             }
         },
+        "/friends": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "friends"
+                ],
+                "summary": "List friends",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/internal_friends.FriendProfile"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/friends/requests": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "friends"
+                ],
+                "summary": "List incoming friend requests",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/internal_friends.IncomingRequest"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "friends"
+                ],
+                "summary": "Send a friend request",
+                "parameters": [
+                    {
+                        "description": "receiver",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_friends.sendRequestBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/friends/requests/{id}/accept": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "friends"
+                ],
+                "summary": "Accept a friend request",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/friends/requests/{id}/reject": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "friends"
+                ],
+                "summary": "Reject a friend request",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/friends/{friend_id}/compare": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns averaged audio feature scores and a 0–100 compatibility score. Returns 422 if the friend has no listening data yet.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "friends"
+                ],
+                "summary": "Compare music tastes with a friend",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Friend's user ID",
+                        "name": "friend_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_friends.TasteComparison"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/friends/{friend_id}/playlists": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns playlists created via Tunescape. Returns 422 if the friend has not connected Spotify yet.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "friends"
+                ],
+                "summary": "Get a friend's playlists",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Friend's user ID",
+                        "name": "friend_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_Uranury_tunescape_internal_playlist.Playlist"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/leaderboards/{feature}": {
             "get": {
                 "description": "Returns the top-ranked users for a given audio feature. Valid features: valence, energy, danceability, acousticness.",
@@ -306,13 +662,63 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/leaderboard.LeaderboardResponse"
+                            "$ref": "#/definitions/internal_leaderboard.LeaderboardResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid feature",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/playlists/top-tracks": {
+            "post": {
+                "description": "Creates a private Spotify playlist containing all tracks from the",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "playlists"
+                ],
+                "summary": "Create Spotify playlist from latest snapshot",
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/internal_playlist.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "No snapshot found — create one first",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "422": {
+                        "description": "Spotify account not connected",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "502": {
+                        "description": "Spotify temporarily unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     }
                 }
@@ -332,19 +738,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/user.ProfileResponse"
+                            "$ref": "#/definitions/internal_user.ProfileResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     }
                 }
@@ -375,19 +781,19 @@
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     },
                     "404": {
                         "description": "User not found",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     }
                 }
@@ -409,20 +815,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/snapshot.SnapshotSummary"
+                                "$ref": "#/definitions/internal_snapshot.SnapshotSummary"
                             }
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     }
                 }
@@ -436,29 +842,55 @@
                     "snapshots"
                 ],
                 "summary": "Create top-tracks snapshot",
+                "parameters": [
+                    {
+                        "enum": [
+                            "short_term",
+                            "medium_term",
+                            "long_term"
+                        ],
+                        "type": "string",
+                        "default": "medium_term",
+                        "description": "Time range for top tracks (short_term | medium_term | long_term)",
+                        "name": "time_range",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/snapshot.Snapshot"
+                            "$ref": "#/definitions/internal_snapshot.Snapshot"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid time_range value",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     },
                     "422": {
                         "description": "Spotify account not connected",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
+                        }
+                    },
+                    "502": {
+                        "description": "Spotify temporarily unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     }
                 }
@@ -487,31 +919,31 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/snapshot.Snapshot"
+                            "$ref": "#/definitions/internal_snapshot.Snapshot"
                         }
                     },
                     "400": {
                         "description": "Invalid UUID",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     }
                 }
@@ -534,13 +966,13 @@
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     }
                 }
@@ -565,19 +997,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/trends.TrendsResponse"
+                            "$ref": "#/definitions/internal_trends.TrendsResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apperrors.HTTPError"
+                            "$ref": "#/definitions/gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError"
                         }
                     }
                 }
@@ -585,7 +1017,56 @@
         }
     },
     "definitions": {
-        "analytics.AudioFeatureAverages": {
+        "gitlab_com_Uranury_tunescape_internal_playlist.Playlist": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "embed_url": {
+                    "type": "string"
+                },
+                "external_url": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_Uranury_tunescape_internal_track.Track": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "popularity": {
+                    "type": "integer"
+                },
+                "spotify_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_Uranury_tunescape_pkg_apperrors.HTTPError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "details": {},
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_analytics.AudioFeatureAverages": {
             "type": "object",
             "properties": {
                 "acousticness": {
@@ -617,11 +1098,11 @@
                 }
             }
         },
-        "analytics.MusicTasteResponse": {
+        "internal_analytics.MusicTasteResponse": {
             "type": "object",
             "properties": {
                 "averages": {
-                    "$ref": "#/definitions/analytics.AudioFeatureAverages"
+                    "$ref": "#/definitions/internal_analytics.AudioFeatureAverages"
                 },
                 "snapshot_id": {
                     "type": "string"
@@ -631,19 +1112,7 @@
                 }
             }
         },
-        "apperrors.HTTPError": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "details": {},
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "auth.loginRequest": {
+        "internal_auth.loginRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -659,7 +1128,7 @@
                 }
             }
         },
-        "auth.signupRequest": {
+        "internal_auth.signupRequest": {
             "type": "object",
             "required": [
                 "display_name",
@@ -680,7 +1149,7 @@
                 }
             }
         },
-        "auth.tokenResponse": {
+        "internal_auth.tokenResponse": {
             "type": "object",
             "properties": {
                 "access_token": {
@@ -688,7 +1157,83 @@
                 }
             }
         },
-        "leaderboard.Entry": {
+        "internal_friends.FriendProfile": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "spotify_connected": {
+                    "type": "boolean"
+                },
+                "spotify_id": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_friends.IncomingRequest": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "display_name": {
+                    "type": "string"
+                },
+                "request_id": {
+                    "type": "integer"
+                },
+                "sender_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_friends.TasteComparison": {
+            "type": "object",
+            "properties": {
+                "compatibility_score": {
+                    "type": "number"
+                },
+                "mine": {
+                    "$ref": "#/definitions/internal_friends.TasteScores"
+                },
+                "theirs": {
+                    "$ref": "#/definitions/internal_friends.TasteScores"
+                }
+            }
+        },
+        "internal_friends.TasteScores": {
+            "type": "object",
+            "properties": {
+                "acousticness": {
+                    "type": "number"
+                },
+                "danceability": {
+                    "type": "number"
+                },
+                "energy": {
+                    "type": "number"
+                },
+                "valence": {
+                    "type": "number"
+                }
+            }
+        },
+        "internal_friends.sendRequestBody": {
+            "type": "object",
+            "required": [
+                "receiver_id"
+            ],
+            "properties": {
+                "receiver_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_leaderboard.Entry": {
             "type": "object",
             "properties": {
                 "display_name": {
@@ -705,13 +1250,13 @@
                 }
             }
         },
-        "leaderboard.LeaderboardResponse": {
+        "internal_leaderboard.LeaderboardResponse": {
             "type": "object",
             "properties": {
                 "entries": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/leaderboard.Entry"
+                        "$ref": "#/definitions/internal_leaderboard.Entry"
                     }
                 },
                 "feature": {
@@ -719,7 +1264,24 @@
                 }
             }
         },
-        "snapshot.Snapshot": {
+        "internal_playlist.Response": {
+            "type": "object",
+            "properties": {
+                "embed_url": {
+                    "type": "string"
+                },
+                "external_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "playlist_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_snapshot.Snapshot": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -731,7 +1293,7 @@
                 "tracks": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/track.Track"
+                        "$ref": "#/definitions/gitlab_com_Uranury_tunescape_internal_track.Track"
                     }
                 },
                 "user_id": {
@@ -739,7 +1301,7 @@
                 }
             }
         },
-        "snapshot.SnapshotSummary": {
+        "internal_snapshot.SnapshotSummary": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -753,24 +1315,7 @@
                 }
             }
         },
-        "track.Track": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "popularity": {
-                    "type": "integer"
-                },
-                "spotify_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "trends.SnapshotPoint": {
+        "internal_trends.SnapshotPoint": {
             "type": "object",
             "properties": {
                 "acousticness": {
@@ -811,13 +1356,13 @@
                 }
             }
         },
-        "trends.TrendsResponse": {
+        "internal_trends.TrendsResponse": {
             "type": "object",
             "properties": {
                 "points": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/trends.SnapshotPoint"
+                        "$ref": "#/definitions/internal_trends.SnapshotPoint"
                     }
                 },
                 "user_id": {
@@ -825,7 +1370,7 @@
                 }
             }
         },
-        "user.ProfileResponse": {
+        "internal_user.ProfileResponse": {
             "type": "object",
             "properties": {
                 "avatar_url": {
@@ -841,6 +1386,14 @@
                     "type": "boolean"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }
