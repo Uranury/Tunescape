@@ -856,6 +856,72 @@ canvas { max-height: 320px; width: 100% !important; }
   margin: 0 auto;
 }
 
+.track-img {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+
+.track-img img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+  display: block;
+}
+
+.track-img-placeholder {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #2a4a6e, #1a3350);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.track-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: #F5F9FC;
+  border: 1px solid transparent;
+  transition: background .12s, border-color .12s;
+}
+
+.track-row:hover {
+  background: #EAF2FB;
+  border-color: var(--border);
+}
+
+.track-num {
+  width: 35px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--skype-blue);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.track-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.track-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 @media (max-width: 768px) {
   .sidebar { display: none; }
   .stats-row { grid-template-columns: 1fr 1fr; }

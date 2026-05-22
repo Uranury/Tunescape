@@ -3,6 +3,8 @@ package report
 import (
 	"context"
 	"errors"
+	"io"
+	"log/slog"
 	"testing"
 
 	"github.com/google/uuid"
@@ -36,11 +38,27 @@ func (m *mockLeaderboardService) GetLeaderboard(ctx context.Context, feature str
 }
 
 type mockUserRepository struct {
-	findDisplayNameFn func(ctx context.Context, userID uuid.UUID) (string, error)
+	findDisplayNameFn       func(ctx context.Context, userID uuid.UUID) (string, error)
+	findAvatarURLsByIDsFn   func(ctx context.Context, userIDs []string) (map[string]*string, error)
+	findByDisplayNameFn     func(ctx context.Context, displayName string) (*user.User, error)
 }
 
 func (m *mockUserRepository) FindDisplayName(ctx context.Context, userID uuid.UUID) (string, error) {
 	return m.findDisplayNameFn(ctx, userID)
+}
+
+func (m *mockUserRepository) FindAvatarURLsByIDs(ctx context.Context, userIDs []string) (map[string]*string, error) {
+	if m.findAvatarURLsByIDsFn != nil {
+		return m.findAvatarURLsByIDsFn(ctx, userIDs)
+	}
+	return make(map[string]*string), nil
+}
+
+func (m *mockUserRepository) FindByDisplayName(ctx context.Context, displayName string) (*user.User, error) {
+	if m.findByDisplayNameFn != nil {
+		return m.findByDisplayNameFn(ctx, displayName)
+	}
+	return nil, nil
 }
 
 func (m *mockUserRepository) ConnectSpotify(ctx context.Context, userID uuid.UUID, spotifyID *string, avatarURL, country, product *string) error {
@@ -71,15 +89,10 @@ func (m *mockUserRepository) FindAll(ctx context.Context) ([]user.User, error) {
 	return nil, nil
 }
 
-func (m *mockUserRepository) FindByDisplayName(_ context.Context, _ string) (*user.User, error) {
-	return nil, nil
+func testLogger() *slog.Logger {
+	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
 
-func (m *mockUserRepository) FindAvatarURLsByIDs(_ context.Context, _ []string) (map[string]*string, error) {
-	return map[string]*string{}, nil
-}
-
-// TestReportService_GenerateReport_Success tests successful PDF report generation
 func TestReportService_GenerateReport_Success(t *testing.T) {
 	t.Parallel()
 
@@ -125,7 +138,7 @@ func TestReportService_GenerateReport_Success(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, leaderboardSvc, userRepo)
+	svc := NewService(repo, leaderboardSvc, userRepo, testLogger())
 	pdfData, err := svc.GenerateReport(ctx, userID)
 
 	if err != nil {
@@ -136,7 +149,6 @@ func TestReportService_GenerateReport_Success(t *testing.T) {
 	}
 }
 
-// TestReportService_GenerateReport_UserNotFound tests error when user not found
 func TestReportService_GenerateReport_UserNotFound(t *testing.T) {
 	t.Parallel()
 
@@ -156,7 +168,7 @@ func TestReportService_GenerateReport_UserNotFound(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, &mockLeaderboardService{}, userRepo)
+	svc := NewService(repo, &mockLeaderboardService{}, userRepo, testLogger())
 	_, err := svc.GenerateReport(ctx, userID)
 
 	if err == nil {
@@ -167,7 +179,6 @@ func TestReportService_GenerateReport_UserNotFound(t *testing.T) {
 	}
 }
 
-// TestReportService_GenerateReport_NoTracks tests error when no tracks found
 func TestReportService_GenerateReport_NoTracks(t *testing.T) {
 	t.Parallel()
 
@@ -188,7 +199,7 @@ func TestReportService_GenerateReport_NoTracks(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, &mockLeaderboardService{}, userRepo)
+	svc := NewService(repo, &mockLeaderboardService{}, userRepo, testLogger())
 	_, err := svc.GenerateReport(ctx, userID)
 
 	if err == nil {
@@ -199,7 +210,6 @@ func TestReportService_GenerateReport_NoTracks(t *testing.T) {
 	}
 }
 
-// TestReportService_GenerateReport_LeaderboardServiceError tests graceful handling of leaderboard service errors
 func TestReportService_GenerateReport_LeaderboardServiceError(t *testing.T) {
 	t.Parallel()
 
@@ -229,10 +239,9 @@ func TestReportService_GenerateReport_LeaderboardServiceError(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, leaderboardSvc, userRepo)
+	svc := NewService(repo, leaderboardSvc, userRepo, testLogger())
 	pdfData, err := svc.GenerateReport(ctx, userID)
 
-	// Should still succeed with empty rankings
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
@@ -241,7 +250,6 @@ func TestReportService_GenerateReport_LeaderboardServiceError(t *testing.T) {
 	}
 }
 
-// TestReportService_GenerateReport_EmptyTracks tests report generation with no tracks
 func TestReportService_GenerateReport_EmptyTracks(t *testing.T) {
 	t.Parallel()
 
@@ -267,7 +275,7 @@ func TestReportService_GenerateReport_EmptyTracks(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, leaderboardSvc, userRepo)
+	svc := NewService(repo, leaderboardSvc, userRepo, testLogger())
 	pdfData, err := svc.GenerateReport(ctx, userID)
 
 	if err != nil {

@@ -22,7 +22,7 @@ func NewRepository(exec database.Executor) Repository {
 
 func (r *repository) GetLatestSnapshotTopTracks(ctx context.Context, userID uuid.UUID) ([]track.Track, error) {
 	query := `
-		SELECT t.id, t.spotify_id, t.name, t.popularity
+		SELECT t.id, t.spotify_id, t.name, t.popularity, t.image_url
 		FROM snapshot_tracks st
 		JOIN tracks t ON t.id = st.track_id
 		WHERE st.snapshot_id = (

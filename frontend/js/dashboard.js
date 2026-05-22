@@ -108,21 +108,21 @@ function renderSnapshotPills(snapshots) {
 }
 
 export async function selectSnapshot(id) {
-    document.querySelectorAll('.snapshot-pill').forEach(p =>
-        p.classList.toggle('active', p.dataset.id === id)
-    )
+	document
+		.querySelectorAll('.snapshot-pill')
+		.forEach(p => p.classList.toggle('active', p.dataset.id === id))
 
-    setLoading(true)
-    const res = await api(`/me/snapshots/${id}`, 'GET', null, true)
-    setLoading(false)
+	setLoading(true)
+	const res = await api(`/me/snapshots/${id}`, 'GET', null, true)
+	setLoading(false)
 
-    if (!res.ok) {
-        toast('Failed to load snapshot', 'error')
-        return
-    }
+	if (!res.ok) {
+		toast('Failed to load snapshot', 'error')
+		return
+	}
 
-    currentSnapshot = res.data
-    renderTracks()
+	currentSnapshot = res.data
+	renderTracks()
 }
 
 export async function captureSnapshot() {
@@ -155,41 +155,50 @@ export function setTrackLimit(n) {
 }
 
 function renderTracks() {
-    const snapshot = currentSnapshot
-    const allTracks = snapshot.tracks ?? []
-    const tracks = allTracks.slice(0, trackLimit)
-    const total = allTracks.length
-    const avgPop = total > 0
-        ? allTracks.reduce((s, t) => s + t.popularity, 0) / total
-        : 0
+	const snapshot = currentSnapshot
+	const allTracks = snapshot.tracks ?? []
+	const tracks = allTracks.slice(0, trackLimit)
+	const total = allTracks.length
+	const avgPop =
+		total > 0 ? allTracks.reduce((s, t) => s + t.popularity, 0) / total : 0
 
-    document.getElementById('stat-total').textContent = total
-    document.getElementById('stat-avg-pop').textContent = avgPop.toFixed(1)
-    document.getElementById('stat-updated').textContent =
-        new Date(snapshot.created_at).toLocaleDateString()
+	document.getElementById('stat-total').textContent = total
+	document.getElementById('stat-avg-pop').textContent = avgPop.toFixed(1)
+	document.getElementById('stat-updated').textContent = new Date(
+		snapshot.created_at,
+	).toLocaleDateString()
 
-    const list = document.getElementById('track-list')
-    list.innerHTML = ''
+	const list = document.getElementById('track-list')
+	list.innerHTML = ''
 
-    if (tracks.length === 0) {
-        list.innerHTML = '<p class="empty-state">No tracks in this snapshot.</p>'
-        return
-    }
+	if (tracks.length === 0) {
+		list.innerHTML = '<p class="empty-state">No tracks in this snapshot.</p>'
+		return
+	}
 
-    tracks.forEach((t, i) => {
-        const row = document.createElement('div')
-        row.className = 'track-row'
-        row.innerHTML = `
-      <div class="track-num">${i + 1}</div>
-      <div class="track-info">
-        <div class="track-name">${escapeHtml(t.name)}</div>
-        <div class="pop-bar-wrap">
-          <div class="pop-bar"><div class="pop-fill" style="width:${t.popularity}%"></div></div>
-          <span class="pop-label">${t.popularity}</span>
-        </div>
-      </div>`
-        list.appendChild(row)
-    })
+	tracks.forEach((t, i) => {
+		const row = document.createElement('div')
+		row.className = 'track-row'
+
+		let imageHtml = ''
+		if (t.image_url && t.image_url !== '') {
+			imageHtml = `<div class="track-img"><img src="${escapeHtml(t.image_url)}" alt="Album art" onerror="this.style.display='none'"></div>`
+		} else {
+			imageHtml = `<div class="track-img"><div class="track-img-placeholder">🎵</div></div>`
+		}
+
+		row.innerHTML = `
+            <div class="track-num">${i + 1}</div>
+            ${imageHtml}
+            <div class="track-info">
+                <div class="track-name">${escapeHtml(t.name)}</div>
+                <div class="pop-bar-wrap">
+                    <div class="pop-bar"><div class="pop-fill" style="width:${t.popularity}%"></div></div>
+                    <span class="pop-label">${t.popularity}</span>
+                </div>
+            </div>`
+		list.appendChild(row)
+	})
 }
 
 function clearTrackStats() {

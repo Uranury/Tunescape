@@ -2,6 +2,7 @@ package report
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/google/uuid"
 
@@ -17,10 +18,11 @@ type service struct {
 	repo           Repository
 	userRepo       user.Repository
 	leaderboardSvc leaderboard.Service
+	logger         *slog.Logger
 }
 
-func NewService(repo Repository, leaderboardSvc leaderboard.Service, userRepo user.Repository) Service {
-	return &service{repo: repo, userRepo: userRepo, leaderboardSvc: leaderboardSvc}
+func NewService(repo Repository, leaderboardSvc leaderboard.Service, userRepo user.Repository, logger *slog.Logger) Service {
+	return &service{repo: repo, userRepo: userRepo, leaderboardSvc: leaderboardSvc, logger: logger}
 }
 
 func (s *service) GenerateReport(ctx context.Context, userID uuid.UUID) ([]byte, error) {
@@ -32,6 +34,17 @@ func (s *service) GenerateReport(ctx context.Context, userID uuid.UUID) ([]byte,
 	tracks, err := s.repo.GetLatestSnapshotTopTracks(ctx, userID)
 	if err != nil {
 		return nil, err
+	}
+
+	for i, t := range tracks {
+		if t.ImageURL != nil {
+			s.logger.Info("Track has image", "track", t.Name, "image_url", *t.ImageURL)
+		} else {
+			s.logger.Info("Track has NO image", "track", t.Name)
+		}
+		if i >= 4 {
+			break
+		}
 	}
 
 	rankings, err := s.leaderboardSvc.GetUserRankings(ctx, userID.String())

@@ -30,9 +30,17 @@ type spotifyProfile struct {
 }
 
 type topTrackItem struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	Popularity int    `json:"popularity"`
+  ID         string `json:"id"`
+  Name       string `json:"name"`
+  Popularity int    `json:"popularity"`
+  Album      struct {
+    Name   string `json:"name"`
+    Images []struct {
+      URL    string `json:"url"`
+      Height int    `json:"height"`
+      Width  int    `json:"width"`
+    } `json:"images"`
+  } `json:"album"`
 }
 
 type topTracksResponse struct {

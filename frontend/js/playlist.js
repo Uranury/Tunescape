@@ -3,36 +3,48 @@ import { api, toast, setLoading } from './api.js'
 const MAX_PLAYLIST_TRACKS = 10
 
 export async function loadPlaylistPreview() {
-    const container = document.getElementById('playlist-track-list')
-    if (!container) return
+	const container = document.getElementById('playlist-track-list')
+	if (!container) return
 
-    container.innerHTML = '<p class="empty-state">Loading tracks…</p>'
+	container.innerHTML = '<p class="empty-state">Loading tracks…</p>'
 
-    const listRes = await api('/me/snapshots', 'GET', null, true)
-    if (!listRes.ok || !listRes.data?.length) {
-        container.innerHTML = '<p class="empty-state">No snapshots yet — capture one first.</p>'
-        return
-    }
+	const listRes = await api('/me/snapshots', 'GET', null, true)
+	if (!listRes.ok || !listRes.data?.length) {
+		container.innerHTML =
+			'<p class="empty-state">No snapshots yet — capture one first.</p>'
+		return
+	}
 
-    const latestID = listRes.data[0].id
-    const snapRes = await api(`/me/snapshots/${latestID}`, 'GET', null, true)
-    if (!snapRes.ok) {
-        container.innerHTML = '<p class="empty-state">Failed to load tracks.</p>'
-        return
-    }
+	const latestID = listRes.data[0].id
+	const snapRes = await api(`/me/snapshots/${latestID}`, 'GET', null, true)
+	if (!snapRes.ok) {
+		container.innerHTML = '<p class="empty-state">Failed to load tracks.</p>'
+		return
+	}
 
-    const tracks = (snapRes.data.tracks || []).slice(0, MAX_PLAYLIST_TRACKS)
-    if (tracks.length === 0) {
-        container.innerHTML = '<p class="empty-state">No tracks in snapshot.</p>'
-        return
-    }
+	const tracks = (snapRes.data.tracks || []).slice(0, MAX_PLAYLIST_TRACKS)
+	if (tracks.length === 0) {
+		container.innerHTML = '<p class="empty-state">No tracks in snapshot.</p>'
+		return
+	}
 
-    container.innerHTML = tracks.map((t, i) => `
-    <div class="track-row">
-      <span class="track-num">${i + 1}</span>
-      <span class="track-name">${escapeHtml(t.name)}</span>
-    </div>
-  `).join('')
+	container.innerHTML = tracks
+		.map((t, i) => {
+			let imageHtml = ''
+			if (t.image_url && t.image_url !== '') {
+				imageHtml = `<div class="track-img"><img src="${escapeHtml(t.image_url)}" style="width:32px;height:32px;border-radius:4px;" onerror="this.style.display='none'"></div>`
+			} else {
+				imageHtml = `<div class="track-img"><div class="track-img-placeholder" style="width:32px;height:32px;font-size:1rem;">🎵</div></div>`
+			}
+			return `
+            <div class="track-row" style="padding:4px 8px;">
+                <span class="track-num" style="width:25px;">${i + 1}</span>
+                ${imageHtml}
+                <span class="track-name" style="font-size:0.82rem;">${escapeHtml(t.name)}</span>
+            </div>
+        `
+		})
+		.join('')
 }
 
 export async function createPlaylist() {

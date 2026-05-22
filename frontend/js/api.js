@@ -20,9 +20,9 @@ export function toast(message, type = 'info') {
 }
 
 export function escapeHtml(str) {
-  const d = document.createElement('div')
-  d.textContent = str
-  return d.innerHTML
+	const d = document.createElement('div')
+	d.textContent = str
+	return d.innerHTML
 }
 
 export async function api(url, method, body = null, auth = false) {

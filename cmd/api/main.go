@@ -13,10 +13,10 @@ import (
 	"gitlab.com/Uranury/tunescape/internal/app"
 	"gitlab.com/Uranury/tunescape/internal/auth"
 	"gitlab.com/Uranury/tunescape/internal/cache"
+	"gitlab.com/Uranury/tunescape/internal/friends"
 	"gitlab.com/Uranury/tunescape/internal/infra"
 	"gitlab.com/Uranury/tunescape/internal/leaderboard"
 	"gitlab.com/Uranury/tunescape/internal/middleware"
-	"gitlab.com/Uranury/tunescape/internal/friends"
 	"gitlab.com/Uranury/tunescape/internal/playlist"
 	"gitlab.com/Uranury/tunescape/internal/reccobeats"
 	"gitlab.com/Uranury/tunescape/internal/report"
@@ -88,7 +88,7 @@ func main() {
 	trendsHandler := trends.NewHandler(trendsSvc)
 
 	reportRepo := report.NewRepository(deps.DBConn)
-	reportSvc := report.NewService(reportRepo, leaderboardSvc, userRepo)
+	reportSvc := report.NewService(reportRepo, leaderboardSvc, userRepo, deps.Logger)
 	reportHandler := report.NewHandler(reportSvc)
 
 	authMiddleware := middleware.NewAuth(tokenSvc)

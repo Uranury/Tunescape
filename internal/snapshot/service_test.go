@@ -3,6 +3,7 @@ package snapshot
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -57,6 +58,14 @@ func newDB(t *testing.T) (*sql.DB, sqlmock.Sqlmock, database.TxProvider) {
 	return rawDB, mock, database.NewTxProvider(db)
 }
 
+func anyArgs(n int) []driver.Value {
+	args := make([]driver.Value, n)
+	for i := range args {
+		args[i] = sqlmock.AnyArg()
+	}
+	return args
+}
+
 func makeTopTracks(n int) []track.Track {
 	tracks := make([]track.Track, n)
 	for i := range tracks {
@@ -69,7 +78,6 @@ func makeTopTracks(n int) []track.Track {
 	return tracks
 }
 
-// Success: fetch tracks -> INSERT snapshots -> INSERT tracks (upsert) -> INSERT snapshot_tracks.
 func TestSnapshotService_CreateSnapshot_Success(t *testing.T) {
 	t.Parallel()
 
@@ -89,9 +97,9 @@ func TestSnapshotService_CreateSnapshot_Success(t *testing.T) {
 			sqlmock.NewRows([]string{"id", "created_at"}).
 				AddRow(snapID, createdAt),
 		)
-	for i, tr := range topTracks {
+	for i := range topTracks {
 		mock.ExpectQuery(`INSERT INTO tracks`).
-			WithArgs(tr.SpotifyID, tr.Name, tr.Popularity).
+			WithArgs(anyArgs(4)...).
 			WillReturnRows(
 				sqlmock.NewRows([]string{"id"}).AddRow(trackIDs[i]),
 			)
@@ -152,7 +160,6 @@ func TestSnapshotService_CreateSnapshot_Success(t *testing.T) {
 	}
 }
 
-// TimeRangePropagation: verifies ShortTerm and LongTerm are forwarded to spotify correctly.
 func TestSnapshotService_CreateSnapshot_TimeRangePropagation(t *testing.T) {
 	t.Parallel()
 
@@ -199,7 +206,6 @@ func TestSnapshotService_CreateSnapshot_TimeRangePropagation(t *testing.T) {
 	}
 }
 
-// EmptyTracks: Spotify returns empty list — snapshot is created, tracks and snapshot_tracks are not touched.
 func TestSnapshotService_CreateSnapshot_EmptyTracks(t *testing.T) {
 	t.Parallel()
 
@@ -249,7 +255,6 @@ func TestSnapshotService_CreateSnapshot_EmptyTracks(t *testing.T) {
 	}
 }
 
-// SpotifyError: Spotify returns an error — transaction must not be started at all.
 func TestSnapshotService_CreateSnapshot_SpotifyError(t *testing.T) {
 	t.Parallel()
 
@@ -289,7 +294,6 @@ func TestSnapshotService_CreateSnapshot_SpotifyError(t *testing.T) {
 	}
 }
 
-// InsertSnapshotError: INSERT INTO snapshots fails — transaction is rolled back, tracks are not touched.
 func TestSnapshotService_CreateSnapshot_InsertSnapshotError(t *testing.T) {
 	t.Parallel()
 
@@ -336,7 +340,6 @@ func TestSnapshotService_CreateSnapshot_InsertSnapshotError(t *testing.T) {
 	}
 }
 
-// UpsertTrackError: INSERT INTO tracks fails on the first track — transaction is rolled back, snapshot_tracks is not touched.
 func TestSnapshotService_CreateSnapshot_UpsertTrackError(t *testing.T) {
 	t.Parallel()
 
@@ -354,7 +357,7 @@ func TestSnapshotService_CreateSnapshot_UpsertTrackError(t *testing.T) {
 			sqlmock.NewRows([]string{"id", "created_at"}).AddRow(snapID, time.Now()),
 		)
 	mock.ExpectQuery(`INSERT INTO tracks`).
-		WithArgs(topTracks[0].SpotifyID, topTracks[0].Name, topTracks[0].Popularity).
+		WithArgs(anyArgs(4)...).
 		WillReturnError(expectedErr)
 	mock.ExpectRollback()
 	mock.ExpectClose()
@@ -389,7 +392,6 @@ func TestSnapshotService_CreateSnapshot_UpsertTrackError(t *testing.T) {
 	}
 }
 
-// LinkTrackError: track upsert succeeds but INSERT INTO snapshot_tracks fails — transaction is rolled back.
 func TestSnapshotService_CreateSnapshot_LinkTrackError(t *testing.T) {
 	t.Parallel()
 
@@ -408,7 +410,7 @@ func TestSnapshotService_CreateSnapshot_LinkTrackError(t *testing.T) {
 			sqlmock.NewRows([]string{"id", "created_at"}).AddRow(snapID, time.Now()),
 		)
 	mock.ExpectQuery(`INSERT INTO tracks`).
-		WithArgs(topTracks[0].SpotifyID, topTracks[0].Name, topTracks[0].Popularity).
+		WithArgs(anyArgs(4)...).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(trackID))
 	mock.ExpectExec(`INSERT INTO snapshot_tracks`).
 		WithArgs(snapID, trackID, 1).

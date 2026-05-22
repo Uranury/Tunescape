@@ -69,23 +69,29 @@ func (s *service) ConnectAccount(ctx context.Context, userID uuid.UUID, code str
 }
 
 func (s *service) GetTopTracks(ctx context.Context, userID uuid.UUID, limit int, timeRange TimeRange) ([]track.Track, error) {
-	accessToken, err := s.GetValidToken(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-	items, err := s.client.GetTopTracks(ctx, accessToken, limit, timeRange)
-	if err != nil {
-		return nil, err
-	}
-	tracks := make([]track.Track, len(items))
-	for i, item := range items {
-		tracks[i] = track.Track{
-			SpotifyID:  item.ID,
-			Name:       item.Name,
-			Popularity: item.Popularity,
-		}
-	}
-	return tracks, nil
+  accessToken, err := s.GetValidToken(ctx, userID)
+  if err != nil {
+    return nil, err
+  }
+  items, err := s.client.GetTopTracks(ctx, accessToken, limit, timeRange)
+  if err != nil {
+    return nil, err
+  }
+  tracks := make([]track.Track, len(items))
+  for i, item := range items {
+    var imageURL *string
+    if len(item.Album.Images) > 0 {
+      url := item.Album.Images[0].URL
+      imageURL = &url
+    }
+    tracks[i] = track.Track{
+      SpotifyID:  item.ID,
+      Name:       item.Name,
+      Popularity: item.Popularity,
+      ImageURL:   imageURL,
+    }
+  }
+  return tracks, nil
 }
 
 func (s *service) Disconnect(ctx context.Context, userID uuid.UUID) error {
