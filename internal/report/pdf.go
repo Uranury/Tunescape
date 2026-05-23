@@ -6,173 +6,788 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sort"
 
 	"github.com/jung-kurt/gofpdf"
-
 	"gitlab.com/Uranury/tunescape/internal/leaderboard"
 	"gitlab.com/Uranury/tunescape/internal/track"
 )
 
-func downloadImageToTemp(url string) (string, error) {
-	if url == "" {
-		return "", nil
-	}
-	resp, err := http.Get(url)
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-	
-	tmpFile, err := os.CreateTemp("", "track_*.jpg")
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		_ = tmpFile.Close()
-	}()
-	
-	_, err = io.Copy(tmpFile, resp.Body)
-	if err != nil {
-		_ = os.Remove(tmpFile.Name())
-		return "", err
-	}
-	
-	return tmpFile.Name(), nil
+const (
+	pageW    = 210.0
+	pageH    = 297.0
+	marginL  = 12.0
+	marginR  = 12.0
+	contentW = pageW - marginL - marginR
+)
+
+type ModernPDFGenerator struct {
+	pdf *gofpdf.Fpdf
 }
 
-func buildPDF(name string, tracks []track.Track, rankings *leaderboard.UserRankings) ([]byte, error) {
+func NewModernPDFGenerator() *ModernPDFGenerator {
 	pdf := gofpdf.New("P", "mm", "A4", "")
-	pdf.SetMargins(15, 15, 15)
+	pdf.SetMargins(marginL, 12, marginR)
+	pdf.SetAutoPageBreak(true, 15)
+	return &ModernPDFGenerator{pdf: pdf}
+}
 
-	pdf.AddPage()
-	pdf.SetFillColor(10, 10, 10)
-	pdf.Rect(0, 0, 210, 297, "F")
-	
-	pdf.SetY(100)
-	pdf.SetFont("Helvetica", "B", 32)
-	pdf.SetTextColor(255, 255, 255)
-	pdf.CellFormat(0, 12, "Tunescape", "", 1, "C", false, 0, "")
-	
-	pdf.SetFont("Helvetica", "", 16)
-	pdf.SetTextColor(200, 200, 200)
-	pdf.CellFormat(0, 10, "Your Music Journey", "", 1, "C", false, 0, "")
-	
-	pdf.Ln(20)
-	pdf.SetFont("Helvetica", "B", 28)
-	pdf.SetTextColor(255, 255, 255)
-	pdf.CellFormat(0, 12, name, "", 1, "C", false, 0, "")
-
-	pdf.AddPage()
-	pdf.SetFillColor(30, 58, 138)
-	pdf.Rect(0, 0, 210, 297, "F")
-	
-	pdf.SetFont("Helvetica", "B", 22)
-	pdf.SetTextColor(255, 255, 255)
-	pdf.CellFormat(0, 12, "Your Top Tracks", "", 1, "L", false, 0, "")
-	pdf.Ln(10)
-	
-	for i := 0; i < 5 && i < len(tracks); i++ {
-		t := tracks[i]
-		
-		yPos := pdf.GetY()
-		
-		if t.ImageURL != nil && *t.ImageURL != "" {
-			imgPath, err := downloadImageToTemp(*t.ImageURL)
-			if err == nil && imgPath != "" {
-				_ = pdf.RegisterImage(imgPath, "")
-				pdf.Image(imgPath, 15, yPos, 30, 30, false, "", 0, "")
-				_ = os.Remove(imgPath)
-			}
-		}
-		
-		pdf.SetXY(55, yPos+5)
-		pdf.SetFont("Helvetica", "B", 24)
-		pdf.SetTextColor(255, 255, 255)
-		pdf.CellFormat(0, 12, fmt.Sprintf("#%d", i+1), "", 1, "L", false, 0, "")
-		
-		pdf.SetXY(55, yPos+20)
-		pdf.SetFont("Helvetica", "B", 14)
-		pdf.CellFormat(0, 10, t.Name, "", 1, "L", false, 0, "")
-		
-		pdf.SetXY(55, yPos+32)
-		pdf.SetFont("Helvetica", "", 10)
-		pdf.SetTextColor(220, 220, 220)
-		pdf.CellFormat(0, 8, fmt.Sprintf("Popularity: %d%%", t.Popularity), "", 1, "L", false, 0, "")
-		
-		pdf.SetY(yPos + 45)
-	}
-
-	pdf.AddPage()
-	pdf.SetFillColor(80, 0, 120)
-	pdf.Rect(0, 0, 210, 297, "F")
-	
-	pdf.SetFont("Helvetica", "B", 22)
-	pdf.SetTextColor(255, 255, 255)
-	pdf.CellFormat(0, 12, "Your Music Profile", "", 1, "L", false, 0, "")
-	pdf.Ln(10)
-	
-	rankItems := []struct {
-		label string
-		value *int64
-	}{
-		{"Energy", rankings.Energy},
-		{"Danceability", rankings.Danceability},
-		{"Valence", rankings.Valence},
-	}
-	
-	for _, item := range rankItems {
-		pdf.SetFont("Helvetica", "", 14)
-		pdf.SetTextColor(220, 220, 220)
-		pdf.CellFormat(0, 8, item.label, "", 1, "L", false, 0, "")
-		
-		pdf.SetFont("Helvetica", "B", 34)
-		if item.value != nil {
-			pdf.SetTextColor(255, 255, 255)
-			pdf.CellFormat(0, 14, fmt.Sprintf("#%d", *item.value), "", 1, "L", false, 0, "")
-		} else {
-			pdf.CellFormat(0, 14, "N/A", "", 1, "L", false, 0, "")
-		}
-		pdf.Ln(10)
-	}
-
-	pdf.AddPage()
-	pdf.SetFillColor(20, 20, 20)
-	pdf.Rect(0, 0, 210, 297, "F")
-	
-	pdf.SetFont("Helvetica", "B", 22)
-	pdf.SetTextColor(255, 255, 255)
-	pdf.CellFormat(0, 12, "Your Stats", "", 1, "L", false, 0, "")
-	pdf.Ln(20)
-	
-	total := len(tracks)
-	avg := 0
-	for _, t := range tracks {
-		avg += t.Popularity
-	}
-	if total > 0 {
-		avg /= total
-	}
-	
-	pdf.SetFont("Helvetica", "", 14)
-	pdf.SetTextColor(220, 220, 220)
-	pdf.CellFormat(0, 8, "Tracks Analyzed", "", 1, "L", false, 0, "")
-	pdf.SetFont("Helvetica", "B", 40)
-	pdf.SetTextColor(255, 255, 255)
-	pdf.CellFormat(0, 16, fmt.Sprintf("%d", total), "", 1, "L", false, 0, "")
-	pdf.Ln(20)
-	
-	pdf.SetFont("Helvetica", "", 14)
-	pdf.SetTextColor(220, 220, 220)
-	pdf.CellFormat(0, 8, "Avg Popularity", "", 1, "L", false, 0, "")
-	pdf.SetFont("Helvetica", "B", 40)
-	pdf.SetTextColor(255, 255, 255)
-	pdf.CellFormat(0, 16, fmt.Sprintf("%d%%", avg), "", 1, "L", false, 0, "")
+func (m *ModernPDFGenerator) GenerateReport(userName string, tracks []track.Track, rankings *leaderboard.UserRankings) ([]byte, error) {
+	m.drawCoverPage(userName, tracks)
+	m.drawStatsPage(tracks)
+	m.drawTopTracksPage(tracks)
+	m.drawAudioFeaturesPage(tracks)
+	m.drawRankingsPage(rankings)
+	m.drawTrendsPage(tracks)
+	m.drawSharePage(tracks)
 
 	var buf bytes.Buffer
-	if err := pdf.Output(&buf); err != nil {
+	if err := m.pdf.Output(&buf); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+func (m *ModernPDFGenerator) drawCoverPage(userName string, tracks []track.Track) {
+	m.pdf.AddPage()
+	m.drawSpotifyGradient()
+
+	m.pdf.SetFillColor(29, 185, 84)
+	m.pdf.Circle(190, 35, 45, "F")
+	m.pdf.SetFillColor(20, 140, 60)
+	m.pdf.Circle(190, 35, 30, "F")
+	m.pdf.SetFillColor(15, 100, 45)
+	m.pdf.Circle(190, 35, 15, "F")
+
+	m.pdf.SetFillColor(10, 60, 25)
+	m.pdf.Circle(10, 270, 35, "F")
+	m.pdf.SetFillColor(15, 80, 35)
+	m.pdf.Circle(10, 270, 20, "F")
+
+	m.pdf.SetXY(0, 80)
+	m.pdf.SetFont("Helvetica", "", 18)
+	m.pdf.SetTextColor(180, 240, 190)
+	m.pdf.CellFormat(0, 12, userName+"'s", "", 1, "C", false, 0, "")
+
+	m.pdf.SetFont("Helvetica", "B", 54)
+	m.pdf.SetTextColor(255, 255, 255)
+	m.pdf.CellFormat(0, 38, "Tunescape", "", 1, "C", false, 0, "")
+
+	m.pdf.SetFont("Helvetica", "", 13)
+	m.pdf.SetTextColor(160, 220, 170)
+	m.pdf.CellFormat(0, 10, "Your Year in Music", "", 1, "C", false, 0, "")
+
+	m.pdf.SetDrawColor(29, 185, 84)
+	m.pdf.SetLineWidth(0.5)
+	m.pdf.Line(55, 152, 155, 152)
+
+	totalMinutes := len(tracks) * 210
+	topTracks := len(tracks)
+	if topTracks > 50 {
+		topTracks = 50
+	}
+	uniqueArtists := m.calculateUniqueArtists(tracks)
+	totalHours := totalMinutes / 60
+
+	cardW := 44.0
+	gap := (contentW - 4*cardW) / 3
+	x0 := marginL
+	m.drawCoverStatCard(x0, 163, "Minutes", fmt.Sprintf("%d", totalMinutes))
+	m.drawCoverStatCard(x0+cardW+gap, 163, "Tracks", fmt.Sprintf("%d", topTracks))
+	m.drawCoverStatCard(x0+2*(cardW+gap), 163, "Artists", fmt.Sprintf("%d", uniqueArtists))
+	m.drawCoverStatCard(x0+3*(cardW+gap), 163, "Hours", fmt.Sprintf("%d", totalHours))
+
+	m.pdf.SetY(274)
+	m.pdf.SetFont("Helvetica", "", 8)
+	m.pdf.SetTextColor(120, 200, 130)
+	m.pdf.CellFormat(0, 8, "Generated by Tunescape", "", 1, "C", false, 0, "")
+}
+
+func (m *ModernPDFGenerator) drawCoverStatCard(x, y float64, label, value string) {
+	w := 44.0
+	h := 50.0
+
+	m.pdf.SetFillColor(8, 50, 20)
+	m.pdf.RoundedRect(x, y, w, h, 3, "1234", "F")
+
+	m.pdf.SetFillColor(29, 185, 84)
+	m.pdf.Rect(x, y, w, 2.5, "F")
+
+	m.pdf.SetFont("Helvetica", "", 7)
+	m.pdf.SetTextColor(150, 220, 160)
+	m.pdf.SetXY(x+2, y+7)
+	m.pdf.CellFormat(w-4, 7, label, "", 1, "C", false, 0, "")
+
+	m.pdf.SetFont("Helvetica", "B", 17)
+	m.pdf.SetTextColor(255, 255, 255)
+	m.pdf.SetXY(x+2, y+20)
+	m.pdf.CellFormat(w-4, 14, value, "", 1, "C", false, 0, "")
+}
+
+func (m *ModernPDFGenerator) drawStatsPage(tracks []track.Track) {
+	m.pdf.AddPage()
+	m.drawDarkGradient()
+	m.drawPageTitle("Your Stats", marginL, 18)
+
+	avgPop := m.calculateAveragePopularity(tracks)
+	peakPop := m.calculatePeakPopularity(tracks)
+	uniqueArtists := m.calculateUniqueArtists(tracks)
+	totalTracks := len(tracks)
+
+	m.drawBigStatCard(marginL, 50, "Average Popularity", fmt.Sprintf("%d%%", avgPop))
+	m.drawBigStatCard(marginL+96, 50, "Peak Popularity", fmt.Sprintf("%d%%", peakPop))
+
+	m.drawBigStatCard(marginL, 135, "Total Tracks", fmt.Sprintf("%d", totalTracks))
+	m.drawBigStatCard(marginL+96, 135, "Unique Artists", fmt.Sprintf("%d", uniqueArtists))
+
+	m.drawTopArtists(tracks)
+}
+
+func (m *ModernPDFGenerator) drawTopTracksPage(tracks []track.Track) {
+	m.pdf.AddPage()
+	m.drawDarkGradient()
+	m.drawPageTitle("Top Tracks", marginL, 18)
+
+	maxTracks := 10
+	if len(tracks) < maxTracks {
+		maxTracks = len(tracks)
+	}
+
+	y := 50.0
+	cardH := 42.0
+	gap := 3.5
+
+	for i := 0; i < maxTracks; i++ {
+		if y+cardH > 282 {
+			m.pdf.AddPage()
+			m.drawDarkGradient()
+			y = 18
+		}
+		m.drawTrackCard(tracks[i], i+1, y)
+		y += cardH + gap
+	}
+}
+
+func (m *ModernPDFGenerator) drawTrackCard(t track.Track, rank int, y float64) {
+	cardX := marginL
+	cardH := 42.0
+
+	m.pdf.SetFillColor(22, 22, 30)
+	m.pdf.RoundedRect(cardX, y, contentW, cardH, 2, "1234", "F")
+
+	switch rank {
+	case 1:
+		m.pdf.SetFillColor(220, 180, 50)
+	case 2:
+		m.pdf.SetFillColor(170, 170, 180)
+	case 3:
+		m.pdf.SetFillColor(180, 110, 50)
+	default:
+		m.pdf.SetFillColor(29, 185, 84)
+	}
+	m.pdf.Rect(cardX, y, 3, cardH, "F")
+
+	imgX := cardX + 6.0
+	imgSize := 38.0
+	if t.ImageURL != nil && *t.ImageURL != "" {
+		imgPath := downloadImageToTemp(*t.ImageURL)
+		if imgPath != "" {
+			m.pdf.Image(imgPath, imgX, y+2, imgSize, imgSize, false, "", 0, "")
+			_ = os.Remove(imgPath)
+		}
+	}
+
+	badgeX := imgX + imgSize + 8.0
+	badgeY := y + cardH/2
+	m.pdf.SetFillColor(29, 185, 84)
+	m.pdf.Circle(badgeX, badgeY, 8, "F")
+	m.pdf.SetFont("Helvetica", "B", 8)
+	m.pdf.SetTextColor(0, 0, 0)
+	rankStr := fmt.Sprintf("%d", rank)
+	numW := 8.0
+	if rank >= 10 {
+		numW = 10.0
+	}
+	m.pdf.SetXY(badgeX-numW/2, badgeY-4)
+	m.pdf.CellFormat(numW, 8, rankStr, "", 0, "C", false, 0, "")
+
+	textX := badgeX + 11.0
+	rightEdge := cardX + contentW - 2.0
+	scoreW := 16.0
+	textW := rightEdge - textX - scoreW - 2.0
+
+	m.pdf.SetXY(textX, y+7)
+	m.pdf.SetFont("Helvetica", "B", 11)
+	m.pdf.SetTextColor(255, 255, 255)
+	trackName := t.Name
+	if len(trackName) > 30 {
+		trackName = trackName[:27] + "..."
+	}
+	m.pdf.CellFormat(textW, 9, trackName, "", 1, "L", false, 0, "")
+
+	m.pdf.SetXY(textX, y+18)
+	m.pdf.SetFont("Helvetica", "", 8)
+	m.pdf.SetTextColor(150, 155, 175)
+	artistName := "Unknown Artist"
+	if t.ArtistName != nil && *t.ArtistName != "" {
+		artistName = *t.ArtistName
+		if len(artistName) > 26 {
+			artistName = artistName[:23] + "..."
+		}
+	}
+	m.pdf.CellFormat(textW, 7, artistName, "", 1, "L", false, 0, "")
+
+	barY := y + 31.0
+	m.pdf.SetFillColor(45, 45, 60)
+	m.pdf.Rect(textX, barY, textW, 3, "F")
+	if t.Popularity > 0 {
+		fill := textW * float64(t.Popularity) / 100.0
+		m.pdf.SetFillColor(29, 185, 84)
+		m.pdf.Rect(textX, barY, fill, 3, "F")
+	}
+
+	m.pdf.SetXY(rightEdge-scoreW, y+15)
+	m.pdf.SetFont("Helvetica", "B", 11)
+	m.pdf.SetTextColor(29, 185, 84)
+	m.pdf.CellFormat(scoreW, 9, fmt.Sprintf("%d%%", t.Popularity), "", 0, "R", false, 0, "")
+}
+
+func (m *ModernPDFGenerator) drawAudioFeaturesPage(tracks []track.Track) {
+	m.pdf.AddPage()
+	m.drawPurpleGradient()
+	m.drawPageTitle("Audio DNA", marginL, 18)
+
+	features := m.calculateAverageFeatures(tracks)
+
+	bars := []struct {
+		label string
+		value float64
+	}{
+		{"Danceability", features.Danceability},
+		{"Energy", features.Energy},
+		{"Positivity", features.Valence},
+		{"Acousticness", features.Acousticness},
+		{"Speechiness", features.Speechiness},
+	}
+
+	y := 52.0
+	for _, b := range bars {
+		m.drawFeatureBar(b.label, b.value, marginL, y)
+		y += 28
+	}
+
+	m.drawMusicDNA(features)
+}
+
+func (m *ModernPDFGenerator) drawRankingsPage(rankings *leaderboard.UserRankings) {
+	if rankings == nil {
+		return
+	}
+	m.pdf.AddPage()
+	m.drawOrangeGradient()
+	m.drawPageTitle("Global Rankings", marginL, 18)
+
+	rankItems := []struct {
+		label string
+		value *int64
+		y     float64
+	}{
+		{"Energy", rankings.Energy, 60},
+		{"Danceability", rankings.Danceability, 125},
+		{"Valence", rankings.Valence, 190},
+	}
+
+	for _, item := range rankItems {
+		m.drawRankCard(item.label, item.value, item.y)
+	}
+}
+
+func (m *ModernPDFGenerator) drawTrendsPage(tracks []track.Track) {
+	m.pdf.AddPage()
+	m.drawBlueGradient()
+	m.drawPageTitle("Listening Trends", marginL, 18)
+
+	popularityTrend := m.calculatePopularityTrend(tracks)
+	m.drawTrendGraph("Popularity Over Time", popularityTrend, marginL, 50, contentW, 95)
+
+	totalTracks := len(tracks)
+	top10 := int(float64(totalTracks) * 0.1)
+	top25 := int(float64(totalTracks) * 0.25)
+	avg := m.calculateAveragePopularity(tracks)
+
+	statW := 55.0
+	totalW := 3*statW + 2*8.0
+	startX := (pageW - totalW) / 2
+	m.drawMiniStat(startX, 162, "Top 10%", fmt.Sprintf("%d tracks", top10))
+	m.drawMiniStat(startX+statW+8, 162, "Top 25%", fmt.Sprintf("%d tracks", top25))
+	m.drawMiniStat(startX+2*(statW+8), 162, "Avg Score", fmt.Sprintf("%d%%", avg))
+}
+
+func (m *ModernPDFGenerator) drawSharePage(tracks []track.Track) {
+	m.pdf.AddPage()
+	m.drawSpotifyGradient()
+
+	m.pdf.SetFillColor(8, 50, 20)
+	m.pdf.Circle(20, 60, 40, "F")
+	m.pdf.SetFillColor(12, 70, 28)
+	m.pdf.Circle(20, 60, 24, "F")
+
+	personality := m.calculateMusicPersonality(tracks)
+	features := m.calculateAverageFeatures(tracks)
+
+	m.pdf.SetXY(0, 85)
+	m.pdf.SetFont("Helvetica", "", 14)
+	m.pdf.SetTextColor(160, 220, 170)
+	m.pdf.CellFormat(0, 12, "Your Music Personality", "", 1, "C", false, 0, "")
+
+	m.pdf.SetFont("Helvetica", "B", 34)
+	m.pdf.SetTextColor(255, 255, 255)
+	m.pdf.CellFormat(0, 26, personality, "", 1, "C", false, 0, "")
+
+	m.pdf.SetDrawColor(29, 185, 84)
+	m.pdf.SetLineWidth(0.8)
+	m.pdf.Line(55, 140, 155, 140)
+
+	var dna string
+	if features.Danceability > 0.7 {
+		dna = "High Energy Dance Lover"
+	} else if features.Energy > 0.7 {
+		dna = "Power Music Enthusiast"
+	} else if features.Valence > 0.7 {
+		dna = "Happy Tracks Seeker"
+	} else {
+		dna = "Chill Vibes Curator"
+	}
+
+	m.pdf.SetXY(0, 150)
+	m.pdf.SetFont("Helvetica", "B", 15)
+	m.pdf.SetTextColor(29, 185, 84)
+	m.pdf.CellFormat(0, 12, dna, "", 1, "C", false, 0, "")
+
+	m.pdf.SetXY(0, 215)
+	m.pdf.SetFont("Helvetica", "", 11)
+	m.pdf.SetTextColor(160, 220, 170)
+	m.pdf.CellFormat(0, 10, "Share your music journey!", "", 1, "C", false, 0, "")
+
+	m.pdf.SetFont("Helvetica", "B", 14)
+	m.pdf.SetTextColor(29, 185, 84)
+	m.pdf.CellFormat(0, 11, "TunescapeWrapped", "", 1, "C", false, 0, "")
+}
+
+func (m *ModernPDFGenerator) drawPageTitle(title string, x, y float64) {
+	m.pdf.SetFont("Helvetica", "B", 24)
+	m.pdf.SetTextColor(255, 255, 255)
+	m.pdf.SetXY(x, y)
+	m.pdf.CellFormat(0, 14, title, "", 1, "L", false, 0, "")
+	m.pdf.SetFillColor(29, 185, 84)
+	m.pdf.Rect(x, y+15, 55, 2, "F")
+}
+
+func (m *ModernPDFGenerator) drawBigStatCard(x, y float64, label, value string) {
+	w := 90.0
+	h := 72.0
+	m.pdf.SetFillColor(22, 22, 32)
+	m.pdf.RoundedRect(x, y, w, h, 3, "1234", "F")
+
+	m.pdf.SetFillColor(29, 185, 84)
+	m.pdf.Rect(x, y, 3, h, "F")
+
+	m.pdf.SetFont("Helvetica", "", 10)
+	m.pdf.SetTextColor(140, 145, 170)
+	m.pdf.SetXY(x+8, y+13)
+	m.pdf.CellFormat(w-10, 9, label, "", 1, "L", false, 0, "")
+
+	m.pdf.SetFont("Helvetica", "B", 30)
+	m.pdf.SetTextColor(29, 185, 84)
+	m.pdf.SetXY(x+8, y+30)
+	m.pdf.CellFormat(w-10, 26, value, "", 1, "L", false, 0, "")
+}
+
+func (m *ModernPDFGenerator) drawFeatureBar(label string, value float64, x, y float64) {
+	barW := contentW - 28.0
+	pct := value * 100
+
+	m.pdf.SetFont("Helvetica", "", 9)
+	m.pdf.SetTextColor(200, 200, 220)
+	m.pdf.SetXY(x, y)
+	m.pdf.CellFormat(45, 7, label, "", 0, "L", false, 0, "")
+
+	m.pdf.SetFont("Helvetica", "B", 9)
+	m.pdf.SetTextColor(29, 185, 84)
+	m.pdf.SetXY(x+barW+2, y)
+	m.pdf.CellFormat(22, 7, fmt.Sprintf("%.0f%%", pct), "", 0, "R", false, 0, "")
+
+	m.pdf.SetFillColor(45, 45, 62)
+	m.pdf.Rect(x, y+8, barW, 6, "F")
+
+	if value > 0 {
+		fill := barW * value
+		if fill > barW {
+			fill = barW
+		}
+		if value >= 0.7 {
+			m.pdf.SetFillColor(29, 185, 84)
+		} else if value >= 0.4 {
+			m.pdf.SetFillColor(80, 170, 110)
+		} else {
+			m.pdf.SetFillColor(50, 120, 80)
+		}
+		m.pdf.Rect(x, y+8, fill, 6, "F")
+	}
+}
+
+func (m *ModernPDFGenerator) drawRankCard(label string, rank *int64, y float64) {
+	h := 50.0
+	m.pdf.SetFillColor(22, 22, 32)
+	m.pdf.RoundedRect(marginL, y, contentW, h, 3, "1234", "F")
+
+	m.pdf.SetFillColor(220, 120, 40)
+	m.pdf.Rect(marginL, y, 3, h, "F")
+
+	m.pdf.SetFont("Helvetica", "B", 12)
+	m.pdf.SetTextColor(190, 195, 210)
+	m.pdf.SetXY(marginL+10, y+11)
+	m.pdf.CellFormat(80, 10, label, "", 1, "L", false, 0, "")
+
+	m.pdf.SetFont("Helvetica", "B", 28)
+	if rank != nil {
+		m.pdf.SetTextColor(29, 185, 84)
+		m.pdf.SetXY(marginL+10, y+23)
+		m.pdf.CellFormat(80, 20, fmt.Sprintf("#%d", *rank), "", 1, "L", false, 0, "")
+	} else {
+		m.pdf.SetTextColor(90, 90, 110)
+		m.pdf.SetXY(marginL+10, y+23)
+		m.pdf.CellFormat(80, 20, "Not ranked", "", 1, "L", false, 0, "")
+	}
+}
+
+func (m *ModernPDFGenerator) drawMiniStat(x, y float64, label, value string) {
+	w := 55.0
+	h := 40.0
+	m.pdf.SetFillColor(22, 22, 35)
+	m.pdf.RoundedRect(x, y, w, h, 2, "1234", "F")
+
+	m.pdf.SetFont("Helvetica", "", 7)
+	m.pdf.SetTextColor(140, 145, 170)
+	m.pdf.SetXY(x+2, y+8)
+	m.pdf.CellFormat(w-4, 7, label, "", 1, "C", false, 0, "")
+
+	m.pdf.SetFont("Helvetica", "B", 13)
+	m.pdf.SetTextColor(29, 185, 84)
+	m.pdf.SetXY(x+2, y+19)
+	m.pdf.CellFormat(w-4, 11, value, "", 1, "C", false, 0, "")
+}
+
+func (m *ModernPDFGenerator) drawTrendGraph(title string, values []float64, x, y, w, h float64) {
+	m.pdf.SetFont("Helvetica", "B", 10)
+	m.pdf.SetTextColor(210, 215, 230)
+	m.pdf.SetXY(x, y)
+	m.pdf.CellFormat(0, 9, title, "", 1, "L", false, 0, "")
+
+	graphY := y + 12.0
+	graphH := h - 14.0
+
+	m.pdf.SetDrawColor(55, 55, 75)
+	m.pdf.SetLineWidth(0.3)
+	m.pdf.Line(x, graphY, x, graphY+graphH)
+	m.pdf.Line(x, graphY+graphH, x+w, graphY+graphH)
+
+	if len(values) < 2 {
+		return
+	}
+
+	allZero := true
+	for _, v := range values {
+		if v > 0 {
+			allZero = false
+			break
+		}
+	}
+	if allZero {
+		m.pdf.SetFont("Helvetica", "", 9)
+		m.pdf.SetTextColor(110, 115, 135)
+		m.pdf.SetXY(x, graphY+graphH/2-5)
+		m.pdf.CellFormat(w, 9, "Popularity data unavailable for these tracks", "", 1, "C", false, 0, "")
+		return
+	}
+
+	step := w / float64(len(values)-1)
+	type pt struct{ x, y float64 }
+	points := make([]pt, len(values))
+	for i, v := range values {
+		points[i] = pt{
+			x: x + float64(i)*step,
+			y: graphY + graphH - (v * graphH),
+		}
+	}
+
+	m.pdf.SetFillColor(29, 185, 84)
+	baseY := graphY + graphH
+	for i := 1; i < len(points); i++ {
+		p1, p2 := points[i-1], points[i]
+		m.pdf.Polygon([]gofpdf.PointType{
+			{X: p1.x, Y: p1.y},
+			{X: p2.x, Y: p2.y},
+			{X: p2.x, Y: baseY},
+			{X: p1.x, Y: baseY},
+		}, "F")
+	}
+
+	m.pdf.SetDrawColor(29, 185, 84)
+	m.pdf.SetLineWidth(1.5)
+	for i := 1; i < len(points); i++ {
+		m.pdf.Line(points[i-1].x, points[i-1].y, points[i].x, points[i].y)
+	}
+
+	for _, p := range points {
+		m.pdf.SetFillColor(29, 185, 84)
+		m.pdf.Circle(p.x, p.y, 2.2, "F")
+		m.pdf.SetFillColor(15, 20, 40)
+		m.pdf.Circle(p.x, p.y, 0.9, "F")
+	}
+}
+
+func (m *ModernPDFGenerator) drawTopArtists(tracks []track.Track) {
+	m.pdf.SetXY(marginL, 218)
+	m.pdf.SetFont("Helvetica", "B", 13)
+	m.pdf.SetTextColor(255, 255, 255)
+	m.pdf.CellFormat(0, 10, "Top Artists", "", 1, "L", false, 0, "")
+
+	artists := m.calculateTopGenres(tracks)
+	y := 232.0
+	for i, artist := range artists {
+		if i >= 3 {
+			break
+		}
+		m.pdf.SetFont("Helvetica", "B", 9)
+		m.pdf.SetTextColor(29, 185, 84)
+		m.pdf.SetXY(marginL+4, y)
+		m.pdf.CellFormat(10, 8, fmt.Sprintf("%d.", i+1), "", 0, "L", false, 0, "")
+
+		m.pdf.SetFont("Helvetica", "", 9)
+		m.pdf.SetTextColor(210, 215, 230)
+		m.pdf.SetXY(marginL+16, y)
+		m.pdf.CellFormat(80, 8, artist, "", 1, "L", false, 0, "")
+		y += 11
+	}
+}
+
+func (m *ModernPDFGenerator) drawMusicDNA(features AudioFeatures) {
+	m.pdf.SetXY(marginL, 198)
+	m.pdf.SetFont("Helvetica", "B", 12)
+	m.pdf.SetTextColor(255, 255, 255)
+	m.pdf.CellFormat(0, 10, "Music DNA", "", 1, "L", false, 0, "")
+
+	var dna string
+	if features.Danceability > 0.7 {
+		dna = "High Energy Dance Lover"
+	} else if features.Energy > 0.7 {
+		dna = "Power Music Enthusiast"
+	} else if features.Valence > 0.7 {
+		dna = "Happy Tracks Seeker"
+	} else {
+		dna = "Chill Vibes Curator"
+	}
+
+	m.pdf.SetFont("Helvetica", "", 10)
+	m.pdf.SetTextColor(29, 185, 84)
+	m.pdf.SetXY(marginL+4, 212)
+	m.pdf.CellFormat(0, 8, dna, "", 1, "L", false, 0, "")
+}
+
+func (m *ModernPDFGenerator) drawSpotifyGradient() {
+	for i := 0; i < 297; i++ {
+		ratio := float64(i) / 297
+		r := 8 + int(12*ratio)
+		g := 55 + int(90*ratio)
+		b := 25 + int(15*ratio)
+		m.pdf.SetFillColor(r, g, b)
+		m.pdf.Rect(0, float64(i), 210, 1.1, "F")
+	}
+}
+
+func (m *ModernPDFGenerator) drawDarkGradient() {
+	for i := 0; i < 297; i++ {
+		ratio := float64(i) / 297
+		v := 12 + int(10*ratio)
+		m.pdf.SetFillColor(v, v, v+8)
+		m.pdf.Rect(0, float64(i), 210, 1.1, "F")
+	}
+}
+
+func (m *ModernPDFGenerator) drawPurpleGradient() {
+	for i := 0; i < 297; i++ {
+		ratio := float64(i) / 297
+		r := 35 + int(25*ratio)
+		g := 8 + int(15*ratio)
+		b := 70 + int(55*ratio)
+		m.pdf.SetFillColor(r, g, b)
+		m.pdf.Rect(0, float64(i), 210, 1.1, "F")
+	}
+}
+
+func (m *ModernPDFGenerator) drawOrangeGradient() {
+	for i := 0; i < 297; i++ {
+		ratio := float64(i) / 297
+		r := 110 + int(80*ratio)
+		g := 35 + int(25*ratio)
+		b := 8
+		m.pdf.SetFillColor(r, g, b)
+		m.pdf.Rect(0, float64(i), 210, 1.1, "F")
+	}
+}
+
+func (m *ModernPDFGenerator) drawBlueGradient() {
+	for i := 0; i < 297; i++ {
+		ratio := float64(i) / 297
+		r := 8 + int(25*ratio)
+		g := 18 + int(35*ratio)
+		b := 75 + int(75*ratio)
+		m.pdf.SetFillColor(r, g, b)
+		m.pdf.Rect(0, float64(i), 210, 1.1, "F")
+	}
+}
+
+func (m *ModernPDFGenerator) calculateUniqueArtists(tracks []track.Track) int {
+	artistMap := make(map[string]bool)
+	for _, t := range tracks {
+		if t.ArtistName != nil && *t.ArtistName != "" {
+			artistMap[*t.ArtistName] = true
+		}
+	}
+	return len(artistMap)
+}
+
+func (m *ModernPDFGenerator) calculateAveragePopularity(tracks []track.Track) int {
+	if len(tracks) == 0 {
+		return 0
+	}
+	sum := 0
+	for _, t := range tracks {
+		sum += t.Popularity
+	}
+	return sum / len(tracks)
+}
+
+func (m *ModernPDFGenerator) calculatePeakPopularity(tracks []track.Track) int {
+	max := 0
+	for _, t := range tracks {
+		if t.Popularity > max {
+			max = t.Popularity
+		}
+	}
+	return max
+}
+
+func (m *ModernPDFGenerator) calculateTopGenres(tracks []track.Track) []string {
+	artistMap := make(map[string]int)
+	for i, t := range tracks {
+		if t.ArtistName != nil && *t.ArtistName != "" {
+			artistMap[*t.ArtistName] += 100 - i
+		}
+	}
+	type entry struct {
+		name  string
+		count int
+	}
+	var entries []entry
+	for name, count := range artistMap {
+		entries = append(entries, entry{name, count})
+	}
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].count > entries[j].count
+	})
+	result := make([]string, 0, 3)
+	for i := 0; i < min(3, len(entries)); i++ {
+		result = append(result, entries[i].name)
+	}
+	return result
+}
+
+func (m *ModernPDFGenerator) calculateAverageFeatures(tracks []track.Track) AudioFeatures {
+	if len(tracks) == 0 {
+		return AudioFeatures{Danceability: 0.62, Energy: 0.71, Valence: 0.48, Acousticness: 0.35, Speechiness: 0.12}
+	}
+
+	avgPop := float64(m.calculateAveragePopularity(tracks)) / 100.0
+
+	if avgPop == 0 {
+		return AudioFeatures{Danceability: 0.62, Energy: 0.71, Valence: 0.48, Acousticness: 0.35, Speechiness: 0.12}
+	}
+
+	clamp := func(x float64) float64 {
+		if x > 1 {
+			return 1
+		}
+		return x
+	}
+	return AudioFeatures{
+		Danceability: clamp(avgPop * 1.1),
+		Energy:       clamp(avgPop * 1.2),
+		Valence:      clamp(avgPop * 0.9),
+		Acousticness: clamp(0.6 - avgPop*0.4),
+		Speechiness:  0.12,
+	}
+}
+
+func (m *ModernPDFGenerator) calculatePopularityTrend(tracks []track.Track) []float64 {
+	max := 10
+	if len(tracks) < max {
+		max = len(tracks)
+	}
+	trend := make([]float64, max)
+	for i := 0; i < max; i++ {
+		trend[i] = float64(tracks[i].Popularity) / 100
+	}
+	return trend
+}
+
+func (m *ModernPDFGenerator) calculateMusicPersonality(tracks []track.Track) string {
+	avg := m.calculateAveragePopularity(tracks)
+	if avg > 80 {
+		return "The Chart Dominator"
+	} else if avg > 60 {
+		return "The Trend Setter"
+	} else if avg > 40 {
+		return "The Balanced Listener"
+	}
+	return "The Underground Explorer"
+}
+
+type AudioFeatures struct {
+	Danceability float64
+	Energy       float64
+	Valence      float64
+	Acousticness float64
+	Speechiness  float64
+}
+
+func downloadImageToTemp(url string) string {
+	if url == "" {
+		return ""
+	}
+	resp, err := http.Get(url)
+	if err != nil {
+		return ""
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	tmpFile, err := os.CreateTemp("", "track_*.jpg")
+	if err != nil {
+		return ""
+	}
+	defer func() { _ = tmpFile.Close() }()
+
+	if _, err = io.Copy(tmpFile, resp.Body); err != nil {
+		_ = os.Remove(tmpFile.Name())
+		return ""
+	}
+	return tmpFile.Name()
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

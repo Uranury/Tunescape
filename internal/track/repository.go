@@ -20,15 +20,16 @@ func NewRepository(exec database.Executor) Repository {
 
 func (r *repository) Upsert(ctx context.Context, track *Track) error {
   const query = `
-    INSERT INTO tracks (spotify_id, name, popularity, image_url)
-    VALUES ($1, $2, $3, $4)
+    INSERT INTO tracks (spotify_id, name, popularity, image_url, artist_name)
+    VALUES ($1, $2, $3, $4, $5)
     ON CONFLICT (spotify_id) DO UPDATE SET
-      name       = EXCLUDED.name,
+      name = EXCLUDED.name,
       popularity = EXCLUDED.popularity,
-      image_url  = EXCLUDED.image_url
+      image_url = EXCLUDED.image_url,
+      artist_name = EXCLUDED.artist_name
     RETURNING id
   `
   return r.exec.QueryRowxContext(ctx, query,
-    track.SpotifyID, track.Name, track.Popularity, track.ImageURL,
+    track.SpotifyID, track.Name, track.Popularity, track.ImageURL, track.ArtistName,
   ).Scan(&track.ID)
 }

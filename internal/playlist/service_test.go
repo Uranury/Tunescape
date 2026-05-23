@@ -134,7 +134,7 @@ func TestPlaylistService_CreateFromLatestSnapshot_Success(t *testing.T) {
 	if resp.ExternalURL != externalURL {
 		t.Fatalf("expected external_url %q, got %q", externalURL, resp.ExternalURL)
 	}
-	wantEmbed := "https://open.spotify.com/embed/playlist/" + playlistID
+	wantEmbed := "https://open.spotify.com/embed/playlist/" + playlistID + "?utm_source=generator&theme=0"
 	if resp.EmbedURL != wantEmbed {
 		t.Fatalf("expected embed_url %q, got %q", wantEmbed, resp.EmbedURL)
 	}

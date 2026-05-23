@@ -99,7 +99,7 @@ func TestSnapshotService_CreateSnapshot_Success(t *testing.T) {
 		)
 	for i := range topTracks {
 		mock.ExpectQuery(`INSERT INTO tracks`).
-			WithArgs(anyArgs(4)...).
+			WithArgs(anyArgs(5)...).
 			WillReturnRows(
 				sqlmock.NewRows([]string{"id"}).AddRow(trackIDs[i]),
 			)
@@ -357,7 +357,7 @@ func TestSnapshotService_CreateSnapshot_UpsertTrackError(t *testing.T) {
 			sqlmock.NewRows([]string{"id", "created_at"}).AddRow(snapID, time.Now()),
 		)
 	mock.ExpectQuery(`INSERT INTO tracks`).
-		WithArgs(anyArgs(4)...).
+		WithArgs(anyArgs(5)...).
 		WillReturnError(expectedErr)
 	mock.ExpectRollback()
 	mock.ExpectClose()
@@ -410,7 +410,7 @@ func TestSnapshotService_CreateSnapshot_LinkTrackError(t *testing.T) {
 			sqlmock.NewRows([]string{"id", "created_at"}).AddRow(snapID, time.Now()),
 		)
 	mock.ExpectQuery(`INSERT INTO tracks`).
-		WithArgs(anyArgs(4)...).
+		WithArgs(anyArgs(5)...).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(trackID))
 	mock.ExpectExec(`INSERT INTO snapshot_tracks`).
 		WithArgs(snapID, trackID, 1).

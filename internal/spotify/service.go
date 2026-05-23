@@ -69,29 +69,37 @@ func (s *service) ConnectAccount(ctx context.Context, userID uuid.UUID, code str
 }
 
 func (s *service) GetTopTracks(ctx context.Context, userID uuid.UUID, limit int, timeRange TimeRange) ([]track.Track, error) {
-  accessToken, err := s.GetValidToken(ctx, userID)
-  if err != nil {
-    return nil, err
-  }
-  items, err := s.client.GetTopTracks(ctx, accessToken, limit, timeRange)
-  if err != nil {
-    return nil, err
-  }
-  tracks := make([]track.Track, len(items))
-  for i, item := range items {
-    var imageURL *string
-    if len(item.Album.Images) > 0 {
-      url := item.Album.Images[0].URL
-      imageURL = &url
+    accessToken, err := s.GetValidToken(ctx, userID)
+    if err != nil {
+        return nil, err
     }
-    tracks[i] = track.Track{
-      SpotifyID:  item.ID,
-      Name:       item.Name,
-      Popularity: item.Popularity,
-      ImageURL:   imageURL,
+    items, err := s.client.GetTopTracks(ctx, accessToken, limit, timeRange)
+    if err != nil {
+        return nil, err
     }
-  }
-  return tracks, nil
+    tracks := make([]track.Track, len(items))
+    for i, item := range items {
+        var imageURL *string
+        if len(item.Album.Images) > 0 {
+            url := item.Album.Images[0].URL
+            imageURL = &url
+        }
+        
+        var artistName *string
+        if len(item.Artists) > 0 {
+            name := item.Artists[0].Name
+            artistName = &name
+        }
+        
+        tracks[i] = track.Track{
+            SpotifyID:  item.ID,
+            Name:       item.Name,
+            Popularity: item.Popularity,
+            ImageURL:   imageURL,
+            ArtistName: artistName,
+        }
+    }
+    return tracks, nil
 }
 
 func (s *service) Disconnect(ctx context.Context, userID uuid.UUID) error {

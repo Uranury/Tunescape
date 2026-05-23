@@ -36,21 +36,11 @@ func (s *service) GenerateReport(ctx context.Context, userID uuid.UUID) ([]byte,
 		return nil, err
 	}
 
-	for i, t := range tracks {
-		if t.ImageURL != nil {
-			s.logger.Info("Track has image", "track", t.Name, "image_url", *t.ImageURL)
-		} else {
-			s.logger.Info("Track has NO image", "track", t.Name)
-		}
-		if i >= 4 {
-			break
-		}
-	}
-
 	rankings, err := s.leaderboardSvc.GetUserRankings(ctx, userID.String())
 	if err != nil {
 		rankings = &leaderboard.UserRankings{}
 	}
 
-	return buildPDF(name, tracks, rankings)
+	generator := NewModernPDFGenerator()
+	return generator.GenerateReport(name, tracks, rankings)
 }

@@ -69,7 +69,7 @@ func (r *repository) GetLatestByUserID(ctx context.Context, userID uuid.UUID) (*
 
 	var tracks []track.Track
 	query := `
-		SELECT t.id, t.spotify_id, t.name, t.popularity, t.image_url
+		SELECT t.id, t.spotify_id, t.name, t.popularity, t.image_url, t.artist_name
 		FROM snapshot_tracks st
 		JOIN tracks t ON t.id = st.track_id
 		WHERE st.snapshot_id = $1
@@ -97,7 +97,7 @@ func (r *repository) GetByID(ctx context.Context, snapshotID, userID uuid.UUID) 
 
 	var tracks []track.Track
 	query := `
-		SELECT t.id, t.spotify_id, t.name, t.popularity, t.image_url
+		SELECT t.id, t.spotify_id, t.name, t.popularity, t.image_url, t.artist_name
 		FROM snapshot_tracks st
 		JOIN tracks t ON t.id = st.track_id
 		WHERE st.snapshot_id = $1
