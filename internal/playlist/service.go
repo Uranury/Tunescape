@@ -56,7 +56,7 @@ func (s *service) CreateFromLatestSnapshot(ctx context.Context, userID uuid.UUID
 		return nil, fmt.Errorf("create spotify playlist: %w", err)
 	}
 
-	embedURL := "https://open.spotify.com/embed/playlist/" + result.ID
+	embedURL := "https://open.spotify.com/embed/playlist/" + result.ID + "?utm_source=generator&theme=0"
 	p := &Playlist{
 		SpotifyPlaylistID: result.ID,
 		Name:              name,

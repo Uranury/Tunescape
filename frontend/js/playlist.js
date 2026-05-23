@@ -75,6 +75,8 @@ function renderPlaylistResult(data) {
     const container = document.getElementById('playlist-result')
     if (!container) return
 
+    const embedId = 'playlist-embed-' + Date.now()
+
     container.innerHTML = `
     <div class="playlist-card">
       <div class="playlist-card-info">
@@ -83,17 +85,24 @@ function renderPlaylistResult(data) {
           Open in Spotify ↗
         </a>
       </div>
-      <iframe
-        src="${escapeHtml(data.embed_url)}"
-        width="100%"
-        height="352"
-        frameborder="0"
-        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-        loading="lazy"
-        style="border-radius:8px;margin-top:0.75rem;"
-      ></iframe>
+      <div id="${embedId}" style="height:352px;border-radius:8px;margin-top:0.75rem;background:#f0f4f8;display:flex;align-items:center;justify-content:center;color:#888;font-size:0.85rem;">
+        Loading player…
+      </div>
     </div>
   `
+
+    setTimeout(() => {
+        const slot = document.getElementById(embedId)
+        if (!slot) return
+        const iframe = document.createElement('iframe')
+        iframe.src = data.embed_url
+        iframe.width = '100%'
+        iframe.height = '352'
+        iframe.frameBorder = '0'
+        iframe.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture'
+        iframe.style.cssText = 'border-radius:8px;display:block;'
+        slot.replaceWith(iframe)
+    }, 3000)
 }
 
 function escapeHtml(str) {
